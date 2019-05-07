@@ -16,7 +16,10 @@ enum ErrorCodes
 	SYNTAX_LABEL,
 	SYNTAX_UNKNOWN_TOKEN,
 	SYNTAX_NO_INITIAL_SECTION,
-	DIRECTIVE_NOT_ALLOWED_IN_SECTION
+	DIRECTIVE_NOT_ALLOWED_IN_SECTION,
+	INVALID_OPERAND,
+	INVALID_INSTRUCTION_SECTION,
+	INVALID_ACCESS_MODIFIER_SECTION
 };
 
 class AssemblerException : public exception
@@ -46,7 +49,7 @@ public:
 
 	friend ostream& operator<<(ostream& out, const AssemblerException& ex)
 	{
-		return out << ex << endl;
+		return out << ex.what() << endl;
 	}
 };
 

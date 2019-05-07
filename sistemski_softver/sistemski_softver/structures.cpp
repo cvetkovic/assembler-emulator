@@ -10,3 +10,11 @@ void SymbolTable::InsertSymbol(string label, unsigned long locationCounter, Toke
 
 	table.insert({ label, entry });
 }
+
+SymbolTableEntry* SymbolTable::GetEntry(string name)
+{
+	if (table.find(name) != table.end())
+		return &table.at(name);
+	else
+		return NULL;
+}

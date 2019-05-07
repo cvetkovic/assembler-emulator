@@ -25,28 +25,29 @@ enum SectionType
 
 enum TokenType : int;
 
+struct SymbolTableEntry
+{
+	string name;
+	unsigned long offset;
+	ScopeType scope;
+	SectionType sectionType;
+	TokenType tokenType;
+	bool defined;
+	unsigned long size;
+
+	SymbolTableEntry(string name, unsigned long offset, TokenType type, ScopeType scope, SectionType sectionType, bool defined) :
+		name(name), offset(offset), tokenType(tokenType), scope(scope), sectionType(sectionType), defined(defined) {}
+};
+
 class SymbolTable
 {
 
 private:
-	struct SymbolTableEntry
-	{
-		string name;
-		unsigned long offset;
-		ScopeType scope;
-		SectionType sectionType;
-		TokenType tokenType;
-		bool defined;
-
-		SymbolTableEntry(string name,  unsigned long offset, TokenType type, ScopeType scope, SectionType sectionType, bool defined) :
-			name(name), offset(offset), tokenType(tokenType), scope(scope), sectionType(sectionType), defined(defined) {}
-	};
-
 	map<string, SymbolTableEntry> table;
 
 public:
 	void InsertSymbol(string label, unsigned long locationCounter, TokenType tokenType, ScopeType scopeType, SectionType currentSection, bool defined);
-
+	SymbolTableEntry* GetEntry(string name);
 };
 
 #endif

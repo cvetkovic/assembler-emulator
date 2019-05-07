@@ -126,25 +126,102 @@ void Assembler::FirstPass()
 				continue;
 			else
 				throw AssemblerException("Incorrect syntax after label '" + labelName + "' declaration.", ErrorCodes::SYNTAX_LABEL, lineNumber);
+
+			break;
 		}
 		case TokenType::DIRECTIVE:
+		{
 			if (currentSection == SectionType::START || SectionType::TEXT)
 				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
-			if (currentToken.GetValue == ALIGN_DIRECTIVE)
-			{
+			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+			currentLineTokens.pop();
 
+			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+					throw AssemblerException("Directive '.align' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				unsigned long value = strtoul(operand.GetValue().c_str(), NULL, 0);
+
+				// TODO: optimize this with some math expression to calculate how much
+				//		 to add to round so that location counter could be dividable 
+				//		with 2 ^ value
+				while (locationCounter % (2 ^ value) != 0)
+					locationCounter++;
+			}
+			else if (currentToken.GetValue() == SKIP_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+					throw AssemblerException("Directive '.skip' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				// skip <<operand>> bytes 
+				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
+			}
+			else if (currentToken.GetValue() == CHAR_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+					throw AssemblerException("Directive '.char' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				// skip 1 * val_byte byte
+				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
+			}
+			else if (currentToken.GetValue() == WORD_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+					throw AssemblerException("Directive '.word' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				// skip 2 * val_byte byte
+				locationCounter += (strtoul(operand.GetValue().c_str(), NULL, 0) << 1);
+			}
+			else if (currentToken.GetValue() == LONG_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+					throw AssemblerException("Directive '.long' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				// skip 4 * val_byte byte
+				locationCounter += (strtoul(operand.GetValue().c_str(), NULL, 0) << 2);
 			}
 
 			break;
+		}
 		case TokenType::SECTION:
+		{
+			if (currentSection != SectionType::START)
+			{
+				// TODO: if currentSection type is already present throw error
+				sectionSizeMap.insert({ currentSection, locationCounter });
+				symbolTable.GetEntry("")->size = locationCounter;
+			}
+
+			currentSection = static_cast<SectionType>(stoi("asd"));
+			locationCounter = 0;
+			symbolTable.InsertSymbol("", locationCounter, currentToken.GetTokenType(), ScopeType::LOCAL, currentSection, true);
+
 			break;
+		}
 		case TokenType::ACCESS_MODIFIER:
+		{
+			if (currentSection != SectionType::START)
+				throw AssemblerException("Access modifier '" + currentToken.GetValue() + "' must be put outside of section.", ErrorCodes::INVALID_ACCESS_MODIFIER_SECTION, lineNumber);
+
+			continue;
 			break;
+		}
 		case TokenType::INSTRUCTION:
+		{
+			if (currentSection != SectionType::TEXT)
+				throw AssemblerException("Instructions cannot be put outside of '.text' section.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
+
+			// TODO: check whether all instructions are four bytes long
+			locationCounter += 4;
+
 			break;
+		}
 		case TokenType::END_OF_FILE:
+		{
 			break;
+		}
 		default:
 			throw AssemblerException("Not allowed token detected in the first pass of assembler.", ErrorCodes::NOT_ALLOWED_TOKEN, lineNumber);
 		}
