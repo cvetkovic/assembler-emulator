@@ -54,6 +54,11 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 				r1 = TokenType::END_OF_FILE;
 				r2 = data;
 			}
+			else if (&p == &staticAssemblyParsers[7])
+			{
+				r1 = TokenType::OPERAND_DECIMAL;
+				r2 = data;
+			}
 
 			return Token(r1, r2);
 		}

@@ -5,6 +5,7 @@
 
 #include <regex>
 #include <string>
+#include "enums.h"
 #include "structures.h"
 
 static const regex staticAssemblyParsers[NUMBER_OF_PARSERS] = {
@@ -22,18 +23,6 @@ static const regex staticAssemblyParsers[NUMBER_OF_PARSERS] = {
 	regex(""),
 	regex(""),
 	regex("")
-};
-
-enum TokenType
-{
-	ACCESS_MODIFIER = 0,
-	LABEL,
-	SECTION,
-	DIRECTIVE,
-	INSTRUCTION,
-	SYMBOL,
-	END_OF_FILE,
-	OPERAND_DECIMAL
 };
 
 class Token

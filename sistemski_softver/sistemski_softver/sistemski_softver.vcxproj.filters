@@ -27,6 +27,9 @@
     <ClInclude Include="exceptions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="enums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="assembler.cpp">
@@ -44,6 +47,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="examples\example1.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example2.asm">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

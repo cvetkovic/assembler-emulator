@@ -131,7 +131,7 @@ void Assembler::FirstPass()
 		}
 		case TokenType::DIRECTIVE:
 		{
-			if (currentSection == SectionType::START || SectionType::TEXT)
+			if (currentSection == SectionType::START || currentSection == SectionType::TEXT)
 				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
@@ -191,19 +191,19 @@ void Assembler::FirstPass()
 			{
 				// TODO: if currentSection type is already present throw error
 				sectionSizeMap.insert({ currentSection, locationCounter });
-				symbolTable.GetEntry("")->size = locationCounter;
+				symbolTable.GetEntry(SectionToString(currentSection))->size = locationCounter;
 			}
 
-			currentSection = static_cast<SectionType>(stoi("asd"));
+			currentSection = StringToSectionType(currentToken.GetValue());
 			locationCounter = 0;
-			symbolTable.InsertSymbol("", locationCounter, currentToken.GetTokenType(), ScopeType::LOCAL, currentSection, true);
+			symbolTable.InsertSymbol(currentToken.GetValue(), locationCounter, currentToken.GetTokenType(), ScopeType::LOCAL, currentSection, true);
 
 			break;
 		}
 		case TokenType::ACCESS_MODIFIER:
 		{
-			if (currentSection != SectionType::START)
-				throw AssemblerException("Access modifier '" + currentToken.GetValue() + "' must be put outside of section.", ErrorCodes::INVALID_ACCESS_MODIFIER_SECTION, lineNumber);
+			// if (currentSection != SectionType::START)
+			//	 throw AssemblerException("Access modifier '" + currentToken.GetValue() + "' must be put outside of section.", ErrorCodes::INVALID_ACCESS_MODIFIER_SECTION, lineNumber);*/
 
 			continue;
 			break;
@@ -220,6 +220,13 @@ void Assembler::FirstPass()
 		}
 		case TokenType::END_OF_FILE:
 		{
+			if (currentSection != SectionType::START)
+			{
+				// TODO: if currentSection type is already present throw error
+				sectionSizeMap.insert({ currentSection, locationCounter });
+				symbolTable.GetEntry(SectionToString(currentSection))->size = locationCounter;
+			}
+
 			break;
 		}
 		default:

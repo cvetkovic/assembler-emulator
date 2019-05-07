@@ -1,0 +1,16 @@
+#ifndef ENUMS_PARSER_H_
+#define ENUMS_PARSER_H_
+
+enum TokenType
+{
+	ACCESS_MODIFIER = 0,
+	LABEL = 1,
+	SECTION = 2,
+	DIRECTIVE = 3,
+	INSTRUCTION = 4,
+	SYMBOL = 5,
+	END_OF_FILE = 6,
+	OPERAND_DECIMAL = 7
+};
+
+#endif

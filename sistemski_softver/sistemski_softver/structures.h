@@ -1,6 +1,7 @@
 #ifndef STRUCTURES_PARSER_H_
 #define STRUCTURES_PARSER_H_
 
+#include "enums.h"
 #include "exceptions.h"
 #include "token.h"
 
@@ -16,12 +17,15 @@ enum ScopeType
 
 enum SectionType
 {
-	START,
+	START = 0,
 	TEXT,
 	RODATA,
-	BSS,
-	SYMTAB
+	BSS
 };
+
+SectionType IntToSectionType(int t = 1);
+SectionType StringToSectionType(string t);
+string SectionToString(SectionType t);
 
 enum TokenType : int;
 
@@ -33,9 +37,9 @@ struct SymbolTableEntry
 	SectionType sectionType;
 	TokenType tokenType;
 	bool defined;
-	unsigned long size;
+	unsigned long size = 0;
 
-	SymbolTableEntry(string name, unsigned long offset, TokenType type, ScopeType scope, SectionType sectionType, bool defined) :
+	SymbolTableEntry(string name, unsigned long offset, TokenType tokenType, ScopeType scope, SectionType sectionType, bool defined) :
 		name(name), offset(offset), tokenType(tokenType), scope(scope), sectionType(sectionType), defined(defined) {}
 };
 

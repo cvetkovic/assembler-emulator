@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="assembler.h" />
+    <ClInclude Include="enums.h" />
     <ClInclude Include="exceptions.h" />
     <ClInclude Include="structures.h" />
     <ClInclude Include="token.h" />
@@ -31,6 +32,7 @@
     <ClCompile Include="token.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="examples\example2.asm" />
     <None Include="examples\example1.asm" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
