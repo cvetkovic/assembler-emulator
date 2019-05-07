@@ -3,6 +3,8 @@
 
 #define COMMENT_START_SYMBOL '#'
 #define TOKEN_DELIMITERS "\t\n, "
+
+#define ALIGN_DIRECTIVE ".align"
 #define END_DIRECTIVE ".end"
 
 #include "exceptions.h"

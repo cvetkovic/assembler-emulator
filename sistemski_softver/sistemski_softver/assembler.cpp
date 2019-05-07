@@ -129,9 +129,12 @@ void Assembler::FirstPass()
 		}
 		case TokenType::DIRECTIVE:
 			if (currentSection == SectionType::START || SectionType::TEXT)
-				throw runtime_error("Directive not allowed in current section.");
+				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
-			// HandleDirective();
+			if (currentToken.GetValue == ALIGN_DIRECTIVE)
+			{
+
+			}
 
 			break;
 		case TokenType::SECTION:
