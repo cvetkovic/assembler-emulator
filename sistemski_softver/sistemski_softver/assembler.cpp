@@ -233,4 +233,9 @@ void Assembler::FirstPass()
 			throw AssemblerException("Not allowed token detected in the first pass of assembler.", ErrorCodes::NOT_ALLOWED_TOKEN, lineNumber);
 		}
 	}
+
+	/* NOTE: if TNS should be added this is the place to do it.
+			 linked list of dependent symbols; removing of tail nodes until null returned
+			 circular depencdency detection -> if nothing is removed throw exception
+	*/
 }

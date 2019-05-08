@@ -36,6 +36,12 @@ private:
 	vector<vector<string>> assemblyCode;
 	
 	SymbolTable symbolTable;
+	/* NOTE: in case that we want assembler without linker it is possible that all section
+			 be one behind another, so to implement that it the locationCounter shouldn't be 
+			 set to zero once section switch directive is encountered, but should just keep 
+			 it's old value and sectionSizeMap should be extended that it keeps information
+			 about section start position and size
+	*/
 	map<SectionType, unsigned long> sectionSizeMap;
 
 	void StripeOffCommentsAndLoadLocally();
