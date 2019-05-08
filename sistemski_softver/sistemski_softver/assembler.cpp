@@ -79,7 +79,7 @@ void Assembler::GenerateObjectFile()
 {
 	StripeOffCommentsAndLoadLocally();
 	FirstPass();
-	//SecondPass();
+	SecondPass();
 }
 
 void Assembler::FirstPass()
@@ -233,6 +233,71 @@ void Assembler::FirstPass()
 			throw AssemblerException("Not allowed token detected in the first pass of assembler.", ErrorCodes::NOT_ALLOWED_TOKEN, lineNumber);
 		}
 	}
+}
+
+void Assembler::SecondPass()
+{
+	unsigned long lineNumber = 0;
+	unsigned long locationCounter = 0;
+
+	for (vector<string> line : assemblyCode)
+	{
+		lineNumber++;
+		if (line.size() == 0)
+			continue;
+		
+		// get vector of current line tokens
+		queue<string> currentLineTokens;
+		for (const string& s : line)
+			currentLineTokens.push(s);
+
+		// parse current token
+		Token currentToken = Token::ParseToken(currentLineTokens.front(), lineNumber);
+		currentLineTokens.pop();
+
+		switch (currentToken.GetTokenType())
+		{
+		case TokenType::ACCESS_MODIFIER:
+		{
+			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+			currentLineTokens.pop();
+
+			if (currentToken.GetValue() == PUBLIC_MODIFIER)
+			{
+				if (symbolTable.GetEntry(operand.GetValue()))
+					symbolTable.GetEntry(operand.GetValue())->scope = ScopeType::GLOBAL;
+			}
+			else if (currentToken.GetValue() == EXTERN_MODIFIER)
+			{
+				/*symbolTable.InsertSymbol(operand.GetValue(),
+										 locationCounter,
+										 TokenType::SYMBOL,
+										 ScopeType::EXTERN,
+										 currentSection,
+										 false)
+										 */
+			}
+			else
+				throw new AssemblerException("Access modifier directive not recognized.", ErrorCodes::SYNTAX_ACCESS_MODIFIER, lineNumber);
+
+			// TODO: anything else here?
+		}
+		case TokenType::DIRECTIVE:
+		{
+		}
+		case TokenType::SECTION:
+		{
+		}
+		case TokenType::INSTRUCTION:
+		{
+		}
+		default:
+		{
+
+		}
+		}
+	}
+}
 
 	/* NOTE: if TNS should be added this is the place to do it.
 			 linked list of dependent symbols; removing of tail nodes until null returned
