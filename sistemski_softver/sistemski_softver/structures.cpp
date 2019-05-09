@@ -6,7 +6,7 @@ void SymbolTable::InsertSymbol(string label, unsigned long locationCounter, Toke
 	if (searchForKey != table.end())
 		throw AssemblerException("Symbol '" + label + "' with the same name already exists.", ErrorCodes::SYMBOL_EXISTS);
 
-	SymbolTableEntry entry(label, locationCounter, tokenType, scopeType, currentSection, defined);
+	SymbolTableEntry entry(label, locationCounter, tokenType, scopeType, currentSection, defined, counter++);
 
 	table.insert({ label, entry });
 }

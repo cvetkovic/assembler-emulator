@@ -265,7 +265,7 @@ void Assembler::SecondPass()
 			if (currentToken.GetValue() == PUBLIC_MODIFIER)
 			{
 				if (symbolTable.GetEntry(operand.GetValue()))
-					symbolTable.GetEntry(operand.GetValue())->scope = ScopeType::GLOBAL;
+					symbolTable.GetEntry(operand.GetValue())->scopeType = ScopeType::GLOBAL;
 			}
 			else if (currentToken.GetValue() == EXTERN_MODIFIER)
 			{
@@ -287,6 +287,8 @@ void Assembler::SecondPass()
 		}
 		case TokenType::SECTION:
 		{
+			// also reset location counter to zero in second-pass
+			locationCounter = 0;
 		}
 		case TokenType::INSTRUCTION:
 		{
@@ -303,4 +305,3 @@ void Assembler::SecondPass()
 			 linked list of dependent symbols; removing of tail nodes until null returned
 			 circular depencdency detection -> if nothing is removed throw exception
 	*/
-}
