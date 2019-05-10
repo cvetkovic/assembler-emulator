@@ -15,6 +15,11 @@ Assembler::Assembler(string input_file_url, string output_file_url)
 		throw AssemblerException("Cannot open output file.", ErrorCodes::IO_OUTPUT_EXCEPTION);
 }
 
+Assembler::~Assembler()
+{
+	output_file.close();
+}
+
 /* PRIVATE METHODS */
 
 void Assembler::StripeOffCommentsAndLoadLocally()
@@ -158,10 +163,10 @@ void Assembler::FirstPass()
 				// skip <<operand>> bytes 
 				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
 			}
-			else if (currentToken.GetValue() == CHAR_DIRECTIVE)
+			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
 			{
 				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
-					throw AssemblerException("Directive '.char' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+					throw AssemblerException("Directive '.byte' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip 1 * val_byte byte
 				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
@@ -174,13 +179,25 @@ void Assembler::FirstPass()
 				// skip 2 * val_byte byte
 				locationCounter += (strtoul(operand.GetValue().c_str(), NULL, 0) << 1);
 			}
-			else if (currentToken.GetValue() == LONG_DIRECTIVE)
+			else if (currentToken.GetValue() == EQUIVALENCE_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
-					throw AssemblerException("Directive '.long' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+				Token labelName = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				currentLineTokens.pop();
 
-				// skip 4 * val_byte byte
-				locationCounter += (strtoul(operand.GetValue().c_str(), NULL, 0) << 2);
+				if (labelName.GetTokenType() != TokenType::LABEL)
+					throw AssemblerException("Directive '.equ' requires label-like syntax for first operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				Token equValue = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				currentLineTokens.pop();
+
+				if (equValue.GetTokenType() == TokenType::OPERAND_DECIMAL)
+				{
+					symbolTable.InsertSymbol(labelName.GetValue(), locationCounter, TokenType::DIRECTIVE, ScopeType::LOCAL, currentSection, true);
+				}
+				else
+				{
+					// TODO: other addressing
+				}
 			}
 
 			break;
@@ -194,7 +211,16 @@ void Assembler::FirstPass()
 				symbolTable.GetEntry(SectionToString(currentSection))->size = locationCounter;
 			}
 
-			currentSection = StringToSectionType(currentToken.GetValue());
+			if (currentToken.GetValue() != "")
+				currentSection = StringToSectionType(currentToken.GetValue());
+			else
+			{
+				Token userDefinedSection = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				currentLineTokens.pop();
+
+				currentSection = StringToSectionType(userDefinedSection.GetValue());
+			}
+
 			locationCounter = 0;
 			symbolTable.InsertSymbol(currentToken.GetValue(), locationCounter, currentToken.GetTokenType(), ScopeType::LOCAL, currentSection, true);
 

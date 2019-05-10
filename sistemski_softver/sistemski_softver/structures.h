@@ -19,8 +19,9 @@ enum SectionType
 {
 	START = 0,
 	TEXT,
-	RODATA,
-	BSS
+	DATA,
+	BSS,
+	USER_SECTION
 };
 
 SectionType IntToSectionType(int t = 1);
@@ -31,17 +32,18 @@ enum TokenType : int;
 
 struct SymbolTableEntry
 {
-	string name;
-	unsigned long offset;
-	ScopeType scopeType;
-	SectionType sectionType;
-	TokenType tokenType;
-	bool defined;
-	unsigned long size = 0;
-	unsigned long entryNo;	// needed to link symbol with relocation table
+	string name						// symbol name
+	unsigned long sectionNumber;	// section identifier
+	unsigned long value;			// symbol value
+	unsigned long offset;			// offset from beginning of section
+	ScopeType scopeType;			// scope type
+	
+	TokenType tokenType;			// type of token
+	unsigned long size;				// symbol size
+	unsigned long entryNo;			// needed to link symbol with relocation table
 
-	SymbolTableEntry(string name, unsigned long offset, TokenType tokenType, ScopeType scopeType, SectionType sectionType, bool defined, unsigned long entryNo) :
-		name(name), offset(offset), tokenType(tokenType), scopeType(scopeType), sectionType(sectionType), defined(defined), entryNo(entryNo) {}
+	SymbolTable(string name, unsigned long sectionNumber, unsigned long value, unsigned long offset, ScopeType scopeType, TokenType tokenType, unsigned long size = 0) :
+		name(name), sectionNumber(sectionNumber), value(value), offset(offset), scopeType(scopeType), tokenType(tokenType), size(size) {}
 };
 
 class SymbolTable

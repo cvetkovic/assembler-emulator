@@ -32,7 +32,10 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			else if (&p == &staticAssemblyParsers[2])
 			{
 				r1 = TokenType::SECTION;
-				r2 = data;
+				if (data == "section")
+					r2 = "";
+				else
+					r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[3])
 			{

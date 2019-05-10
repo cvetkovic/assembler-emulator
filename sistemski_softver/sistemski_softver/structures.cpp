@@ -28,11 +28,11 @@ SectionType IntToSectionType(int t)
 	case 1:
 		return SectionType::TEXT;
 	case 2:
-		return SectionType::RODATA;
+		return SectionType::DATA;
 	case 3:
 		return SectionType::BSS;
 	default:
-		return SectionType::TEXT;
+		return SectionType::USER_SECTION;
 	}
 }
 
@@ -42,12 +42,12 @@ SectionType StringToSectionType(string t = "text")
 		return SectionType::START;
 	else if (t == ".text")
 		return SectionType::TEXT;
-	else if (t == ".rodata")
-		return SectionType::RODATA;
+	else if (t == ".data")
+		return SectionType::DATA;
 	else if (t == ".bss")
 		return SectionType::BSS;
 	else
-		return SectionType::TEXT;
+		return SectionType::USER_SECTION;
 }
 
 string SectionToString(SectionType t)
@@ -58,11 +58,11 @@ string SectionToString(SectionType t)
 		return ".start";
 	case SectionType::TEXT:
 		return ".text";
-	case SectionType::RODATA:
-		return ".rodata";
+	case SectionType::DATA:
+		return ".data";
 	case SectionType::BSS:
 		return ".bss";
 	default:
-		return ".text";
+		return "user_section";
 	}
 }

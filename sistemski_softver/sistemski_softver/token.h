@@ -11,7 +11,7 @@
 static const regex staticAssemblyParsers[NUMBER_OF_PARSERS] = {
 	regex("^\\.(global|extern)$"),				// access modifier
 	regex("^([a-zA-Z_][a-zA-Z0-9_]*_{0,}):$"),	// label (contains ':' on end; symbol is without ':')
-	regex("^\\.(data|text|rodata|bss)$"),		// section
+	regex("^\\.(data|text|data|bss|section)$"),	// section
 	regex("^\\.(align|char|long|skip|word)$"),	// directive
 	regex("^(int|add|sub|mul|div|cmp|and|or|not|test|push|pop|call|iret|mov|shl|shr|ret|jmp)(eq|ne|gt|al)?$"),
 	regex("^[a-zA-Z_][a-zA-Z0-9]*_{0,}$"),		// symbol

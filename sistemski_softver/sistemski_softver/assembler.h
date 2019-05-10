@@ -8,9 +8,9 @@
 
 #define ALIGN_DIRECTIVE ".align"
 #define SKIP_DIRECTIVE ".skip"
-#define CHAR_DIRECTIVE ".char"
+#define BYTE_DIRECTIVE ".byte"
 #define WORD_DIRECTIVE ".word"
-#define LONG_DIRECTIVE ".long"
+#define EQUIVALENCE_DIRECTIVE ".equ"
 
 #define PUBLIC_MODIFIER ".global"
 #define EXTERN_MODIFIER ".extern"
@@ -56,6 +56,8 @@ private:
 
 public:
 	Assembler(string input_file_url, string output_file_url);
+	~Assembler();
+
 	void GenerateObjectFile();
 };
 

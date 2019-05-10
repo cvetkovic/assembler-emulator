@@ -8,18 +8,21 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	if (argc < 3)
+	if (argc < 4)
 	{
 		cerr << "Invalid main() invocation parameters" << endl;
-		cout << "Invalid program call parameters. Syntax is ./c_as output_file input_file" << endl;
+		cout << "Invalid program call parameters. Syntax is ./c_as -o output_file input_file" << endl;
 
 		return 1;
 	}
 
 	try
 	{
-		Assembler assembler(argv[2], argv[1]);
-		assembler.GenerateObjectFile();
+		if (string(argv[1]) == "-o")
+		{
+			Assembler assembler(argv[2], argv[1]);
+			assembler.GenerateObjectFile();
+		}
 
 		return 0;
 	}
