@@ -20,7 +20,7 @@ int main(int argc, char** argv)
 	{
 		if (string(argv[1]) == "-o")
 		{
-			Assembler assembler(argv[2], argv[1]);
+			Assembler assembler(argv[3], argv[2]);
 			assembler.GenerateObjectFile();
 		}
 
@@ -36,6 +36,8 @@ int main(int argc, char** argv)
 		cout << ex.what() << endl;
 		cout << endl;
 	}
+
+	system("pause");
 
 	return 1;
 }

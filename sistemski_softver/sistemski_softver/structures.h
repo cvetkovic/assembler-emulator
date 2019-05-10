@@ -30,9 +30,15 @@ string SectionToString(SectionType t);
 
 enum TokenType : int;
 
+/////////////////////////////////////////////////////////
+///////////////////// SYMBOL TABLE //////////////////////
+/////////////////////////////////////////////////////////
+
+typedef unsigned long SymbolTableID;
+
 struct SymbolTableEntry
 {
-	string name						// symbol name
+	string name;					// symbol name
 	unsigned long sectionNumber;	// section identifier
 	unsigned long value;			// symbol value
 	unsigned long offset;			// offset from beginning of section
@@ -40,22 +46,51 @@ struct SymbolTableEntry
 	
 	TokenType tokenType;			// type of token
 	unsigned long size;				// symbol size
-	unsigned long entryNo;			// needed to link symbol with relocation table
+	SymbolTableID entryNo;			// needed to link symbol with relocation table
 
-	SymbolTable(string name, unsigned long sectionNumber, unsigned long value, unsigned long offset, ScopeType scopeType, TokenType tokenType, unsigned long size = 0) :
-		name(name), sectionNumber(sectionNumber), value(value), offset(offset), scopeType(scopeType), tokenType(tokenType), size(size) {}
+	SymbolTableEntry(string name, unsigned long sectionNumber, unsigned long value, unsigned long offset, ScopeType scopeType, TokenType tokenType, SymbolTableID entryNo, unsigned long size = 0) :
+		name(name), sectionNumber(sectionNumber), value(value), offset(offset), scopeType(scopeType), tokenType(tokenType), size(size), entryNo(entryNo) {}
 };
 
 class SymbolTable
 {
 
 private:
-	map<string, SymbolTableEntry> table;
-	unsigned long counter = 1;
+	map<SymbolTableID, SymbolTableEntry> table;
+	unsigned long counter = 0;
 
 public:
-	void InsertSymbol(string label, unsigned long locationCounter, TokenType tokenType, ScopeType scopeType, SectionType currentSection, bool defined);
-	SymbolTableEntry* GetEntry(string name);
+	SymbolTableID InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType, unsigned long size);
+	SymbolTableEntry* GetEntryByID(SymbolTableID id);
+};
+
+/////////////////////////////////////////////////////////
+///////////////////// SECTION TABLE /////////////////////
+/////////////////////////////////////////////////////////
+
+typedef unsigned long SectionID;
+
+struct SectionTableEntry
+{
+	string name;
+	unsigned long startAddress;
+	unsigned long length;
+	SectionID entryNo;
+	SymbolTableID symbolTableEntryNo;
+
+	SectionTableEntry(string name, unsigned long startAddress, unsigned long length, SectionID entryNo) :
+		name(name), startAddress(startAddress), length(length), entryNo(entryNo) {}
+};
+
+class SectionTable
+{
+private:
+	map<SectionID, SectionTableEntry> table;
+	SectionID counter = 0;
+
+public:
+	SectionID InsertSection(string name, unsigned long startAddress, unsigned long length);
+	SectionTableEntry* GetEntryByID(SectionID id);
 };
 
 #endif

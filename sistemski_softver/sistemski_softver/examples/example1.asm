@@ -1,11 +1,10 @@
 .data
-.asciz "Zdravo\n"
+#.asciz "Zdravo\n"
 
 .text
 .global saberi
 
-saberi:
-enter 0, 0
+saberi: enter 0, 0
 
 mov eax, [ebp + 8]			# eax = a;
 mov ecx, [ebp + 12]			# ecx = b;

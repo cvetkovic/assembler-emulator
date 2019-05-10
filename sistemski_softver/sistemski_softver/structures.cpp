@@ -1,20 +1,27 @@
 #include "structures.h"
 
-void SymbolTable::InsertSymbol(string label, unsigned long locationCounter, TokenType tokenType, ScopeType scopeType, SectionType currentSection, bool defined)
+SymbolTableID SymbolTable::InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType, unsigned long size)
 {
-	auto searchForKey = table.find(label);
-	if (searchForKey != table.end())
-		throw AssemblerException("Symbol '" + label + "' with the same name already exists.", ErrorCodes::SYMBOL_EXISTS);
+	if (tokenType != TokenType::SECTION)
+	{
+		map<SymbolTableID, SymbolTableEntry>::iterator it;
 
-	SymbolTableEntry entry(label, locationCounter, tokenType, scopeType, currentSection, defined, counter++);
+		for (it = table.begin(); it != table.end(); it++)
+			if (it->second.name == name)
+				throw AssemblerException("Symbol '" + name + "' already is duplicated.", ErrorCodes::SYMBOL_EXISTS);
+	}		
 
-	table.insert({ label, entry });
+	SymbolTableEntry entry(name, sectionNumber, value, locationCounter, scopeType, tokenType, counter, size);
+
+	table.insert({ counter, entry });
+
+	return counter++;
 }
 
-SymbolTableEntry* SymbolTable::GetEntry(string name)
+SymbolTableEntry* SymbolTable::GetEntryByID(SymbolTableID id)
 {
-	if (table.find(name) != table.end())
-		return &table.at(name);
+	if (table.find(id) != table.end())
+		return &table.at(id);
 	else
 		return NULL;
 }
@@ -65,4 +72,23 @@ string SectionToString(SectionType t)
 	default:
 		return "user_section";
 	}
+}
+
+SectionID SectionTable::InsertSection(string name, unsigned long startAddress, unsigned long length)
+{
+	map<SectionID, SectionTableEntry>::iterator it;
+
+	for (it = table.begin(); it != table.end(); it++)
+		if (it->second.name == name)
+			cout << "Warning: Sections with the same name ('" << name << "') have been detected. They will be assembled to independent and different sections." << endl;
+
+	SectionTableEntry entry(name, startAddress, length, counter);
+	table.insert({ counter, entry });
+
+	return counter++;;
+}
+
+SectionTableEntry* SectionTable::GetEntryByID(SectionID id)
+{
+	return &table.at(id);
 }

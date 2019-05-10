@@ -89,10 +89,11 @@ void Assembler::GenerateObjectFile()
 
 void Assembler::FirstPass()
 {
-	unsigned long locationCounter = 0;
-	SectionType currentSection = SectionType::START;
-
 	unsigned long lineNumber = 0;
+
+	unsigned long locationCounter = 0;
+	SectionType currentSectionType = SectionType::START;
+	SectionID currentSectionNo = -1;
 
 	// get each line
 	for (const vector<string>& line : assemblyCode)
@@ -110,33 +111,45 @@ void Assembler::FirstPass()
 		// parse current token
 		Token currentToken = Token::ParseToken(currentLineTokens.front(), lineNumber);
 		currentLineTokens.pop();
+		
+		// TODO: don't allow tokens to be put in START section
+
+		// necessary because label and instruction can be in the same line
+		string labelName;
+		if (currentToken.GetTokenType() == TokenType::LABEL)
+		{
+			labelName = currentToken.GetValue();
+
+			if (currentSectionType == SectionType::START)
+				throw AssemblerException("Label '" + labelName + "' cannot be defined at the start of a file without prior specificating a section.", ErrorCodes::SYNTAX_NO_INITIAL_SECTION, lineNumber);
+
+			symbolTable.InsertSymbol(labelName,
+				currentSectionNo,
+				ASM_UNDEFINED,
+				locationCounter,
+				ScopeType::LOCAL,
+				TokenType::LABEL,
+				ASM_UNDEFINED);
+
+			if (currentLineTokens.empty())
+				continue;
+			
+			// prepare next token to analyze
+			currentToken = Token::ParseToken(currentLineTokens.front(), lineNumber);
+			currentLineTokens.pop();
+		}
 
 		switch (currentToken.GetTokenType())
 		{
 		case TokenType::LABEL:
 		{
-			string labelName = currentToken.GetValue();
-
-			if (currentSection == SectionType::START)
-				throw AssemblerException("Label '" + labelName + "' cannot be defined at the start of a file without prior specificating a section.", ErrorCodes::SYNTAX_NO_INITIAL_SECTION, lineNumber);
-
-			symbolTable.InsertSymbol(labelName,
-				locationCounter,
-				currentToken.GetTokenType(),
-				ScopeType::LOCAL,
-				currentSection,
-				true);
-
-			if (currentLineTokens.empty())
-				continue;
-			else
-				throw AssemblerException("Incorrect syntax after label '" + labelName + "' declaration.", ErrorCodes::SYNTAX_LABEL, lineNumber);
+			throw AssemblerException("Incorrect syntax after label '" + labelName + "' declaration.", ErrorCodes::SYNTAX_LABEL, lineNumber);
 
 			break;
 		}
 		case TokenType::DIRECTIVE:
 		{
-			if (currentSection == SectionType::START || currentSection == SectionType::TEXT)
+			if (currentSectionType == SectionType::START)
 				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
@@ -152,77 +165,126 @@ void Assembler::FirstPass()
 				// TODO: optimize this with some math expression to calculate how much
 				//		 to add to round so that location counter could be dividable 
 				//		with 2 ^ value
-				while (locationCounter % (2 ^ value) != 0)
+				unsigned long divisibleBy = (unsigned long)pow(2.0, value);
+				while ((locationCounter % divisibleBy) != 0)
 					locationCounter++;
+			}
+			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
+			{
+				if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+					throw AssemblerException("Directive '.byte' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+				
+				// skip 1 * val_byte byte
+				locationCounter += 1; // strtoul(operand.GetValue().c_str(), NULL, 0);
 			}
 			else if (currentToken.GetValue() == SKIP_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL &&
+					operand.GetTokenType() != TokenType::OPERAND_HEX)
 					throw AssemblerException("Directive '.skip' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip <<operand>> bytes 
 				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
 			}
-			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
-			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
-					throw AssemblerException("Directive '.byte' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
-
-				// skip 1 * val_byte byte
-				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
-			}
 			else if (currentToken.GetValue() == WORD_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
-					throw AssemblerException("Directive '.word' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+				if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip 2 * val_byte byte
-				locationCounter += (strtoul(operand.GetValue().c_str(), NULL, 0) << 1);
+				locationCounter += 2; // (strtoul(operand.GetValue().c_str(), NULL, 0) << 1);
 			}
 			else if (currentToken.GetValue() == EQUIVALENCE_DIRECTIVE)
 			{
-				Token labelName = Token::ParseToken(currentLineTokens.front(), lineNumber);
-				currentLineTokens.pop();
+				if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
-				if (labelName.GetTokenType() != TokenType::LABEL)
+				// Token operand holds equivalence name
+				// Token equValue holds value to which label is equivalent
+
+				if (operand.GetTokenType() != TokenType::SYMBOL)
 					throw AssemblerException("Directive '.equ' requires label-like syntax for first operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				Token equValue = Token::ParseToken(currentLineTokens.front(), lineNumber);
 				currentLineTokens.pop();
 
+				unsigned long value;
+
 				if (equValue.GetTokenType() == TokenType::OPERAND_DECIMAL)
-				{
-					symbolTable.InsertSymbol(labelName.GetValue(), locationCounter, TokenType::DIRECTIVE, ScopeType::LOCAL, currentSection, true);
-				}
+					value = strtoul(equValue.GetValue().c_str(), NULL, 0);
+				else if (equValue.GetTokenType() == TokenType::OPERAND_HEX)
+					value = stoul(equValue.GetValue(), nullptr, 0);
 				else
 				{
-					// TODO: other addressing
+					// TODO: implement equivalence expressions here if needed
 				}
+				
+				symbolTable.InsertSymbol(operand.GetValue(),
+					currentSectionNo,
+					value,
+					ASM_UNDEFINED,
+					ScopeType::LOCAL,
+					TokenType::DIRECTIVE,
+					ASM_UNDEFINED);
+			}
+			else
+			{
+				// throw AssemblerException("directive not recognized");
 			}
 
 			break;
 		}
 		case TokenType::SECTION:
 		{
-			if (currentSection != SectionType::START)
-			{
-				// TODO: if currentSection type is already present throw error
-				sectionSizeMap.insert({ currentSection, locationCounter });
-				symbolTable.GetEntry(SectionToString(currentSection))->size = locationCounter;
-			}
+			// update existing current section size
+			if (currentSectionType != SectionType::START)
+				sectionTable.GetEntryByID(currentSectionNo)->length = locationCounter;
 
-			if (currentToken.GetValue() != "")
-				currentSection = StringToSectionType(currentToken.GetValue());
+			if (currentToken.GetValue() != "")	// GetValue() can return (.bss|.data|.text)
+			{
+				currentSectionType = StringToSectionType(currentToken.GetValue());
+				currentSectionNo = sectionTable.InsertSection(currentToken.GetValue(), 0, 0);
+
+				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(currentToken.GetValue(),
+					currentSectionNo,
+					ASM_UNDEFINED,
+					ASM_UNDEFINED,
+					ScopeType::LOCAL,
+					TokenType::SECTION,
+					ASM_UNDEFINED);
+
+				sectionTable.GetEntryByID(currentSectionNo)->symbolTableEntryNo = symbolTableNo;
+			}				
 			else
 			{
 				Token userDefinedSection = Token::ParseToken(currentLineTokens.front(), lineNumber);
 				currentLineTokens.pop();
 
-				currentSection = StringToSectionType(userDefinedSection.GetValue());
+				if (userDefinedSection.GetTokenType() != TokenType::SECTION && userDefinedSection.GetTokenType() != TokenType::SYMBOL)
+					throw new AssemblerException("After '.section' directive section name is required.", ErrorCodes::SYNTAX_UNKNOWN_TOKEN, lineNumber);
+				
+				currentSectionType = StringToSectionType(userDefinedSection.GetValue());
+				currentSectionNo = sectionTable.InsertSection(userDefinedSection.GetValue(), 0, 0);
+
+				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(userDefinedSection.GetValue(),
+					currentSectionNo,
+					ASM_UNDEFINED,
+					ASM_UNDEFINED,
+					ScopeType::LOCAL,
+					TokenType::SECTION,
+					ASM_UNDEFINED);
+
+				sectionTable.GetEntryByID(currentSectionNo)->symbolTableEntryNo = symbolTableNo;
 			}
 
+			// all new sections begin from zero
 			locationCounter = 0;
-			symbolTable.InsertSymbol(currentToken.GetValue(), locationCounter, currentToken.GetTokenType(), ScopeType::LOCAL, currentSection, true);
 
 			break;
 		}
@@ -236,7 +298,7 @@ void Assembler::FirstPass()
 		}
 		case TokenType::INSTRUCTION:
 		{
-			if (currentSection != SectionType::TEXT)
+			if (currentSectionType != SectionType::TEXT)
 				throw AssemblerException("Instructions cannot be put outside of '.text' section.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
 
 			// TODO: check whether all instructions are four bytes long
@@ -246,12 +308,9 @@ void Assembler::FirstPass()
 		}
 		case TokenType::END_OF_FILE:
 		{
-			if (currentSection != SectionType::START)
-			{
-				// TODO: if currentSection type is already present throw error
-				sectionSizeMap.insert({ currentSection, locationCounter });
-				symbolTable.GetEntry(SectionToString(currentSection))->size = locationCounter;
-			}
+			// update length of the last section
+			if (currentSectionType != SectionType::START)
+				sectionTable.GetEntryByID(currentSectionNo)->length = locationCounter;
 
 			break;
 		}
@@ -285,7 +344,7 @@ void Assembler::SecondPass()
 		{
 		case TokenType::ACCESS_MODIFIER:
 		{
-			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+			/*Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
 			currentLineTokens.pop();
 
 			if (currentToken.GetValue() == PUBLIC_MODIFIER)
@@ -295,18 +354,19 @@ void Assembler::SecondPass()
 			}
 			else if (currentToken.GetValue() == EXTERN_MODIFIER)
 			{
-				/*symbolTable.InsertSymbol(operand.GetValue(),
+				symbolTable.InsertSymbol(operand.GetValue(),
 										 locationCounter,
 										 TokenType::SYMBOL,
 										 ScopeType::EXTERN,
 										 currentSection,
 										 false)
-										 */
+										 
 			}
 			else
 				throw new AssemblerException("Access modifier directive not recognized.", ErrorCodes::SYNTAX_ACCESS_MODIFIER, lineNumber);
 
 			// TODO: anything else here?
+			*/
 		}
 		case TokenType::DIRECTIVE:
 		{
@@ -325,9 +385,9 @@ void Assembler::SecondPass()
 		}
 		}
 	}
-}
 
 	/* NOTE: if TNS should be added this is the place to do it.
 			 linked list of dependent symbols; removing of tail nodes until null returned
 			 circular depencdency detection -> if nothing is removed throw exception
 	*/
+}

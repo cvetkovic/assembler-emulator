@@ -30,10 +30,18 @@ private:
 	ErrorCodes errorCode = ErrorCodes::NOT_DEFINED;
 	unsigned long location = -1;
 
+	char** a = new char*[1];
+
 public:
 	AssemblerException(string message) noexcept : exception(), message(message) {}
-	AssemblerException(string message, ErrorCodes errorCode) noexcept : exception(), errorCode(errorCode) {}
-	AssemblerException(string message, ErrorCodes errorCode, unsigned long location) noexcept : exception(), errorCode(errorCode), location(location) {}
+	AssemblerException(string message, ErrorCodes errorCode) noexcept : exception(), message(message), errorCode(errorCode) {}
+	AssemblerException(string message, ErrorCodes errorCode, unsigned long location) noexcept : exception(), message(message), errorCode(errorCode), location(location) {}
+	~AssemblerException()
+	{
+		// TODO: check if deletion is OK
+		delete[] a[0];
+		delete a;
+	}
 
 	const char* what() const noexcept override
 	{
@@ -41,11 +49,16 @@ public:
 		if (errorCode != ErrorCodes::NOT_DEFINED)
 			report += " (" + to_string(int(errorCode)) + ")";
 		if (location != -1)
-			report += "at line " + to_string(location) + ": ";
+			report += " at line " + to_string(location) + ": ";
 
 		report += message;
 
-		return report.c_str();
+		char *cstr = new char[report.length() + 1];
+		strcpy(cstr, report.c_str());
+		a[0] = cstr;
+
+		// cannot return report.c_str() because it is stored on stack
+		return cstr;
 	}
 
 	friend ostream& operator<<(ostream& out, const AssemblerException& ex)

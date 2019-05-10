@@ -10,7 +10,8 @@ enum TokenType
 	INSTRUCTION = 4,
 	SYMBOL = 5,
 	END_OF_FILE = 6,
-	OPERAND_DECIMAL = 7
+	OPERAND_DECIMAL = 7,
+	OPERAND_HEX = 8
 };
 
 #endif

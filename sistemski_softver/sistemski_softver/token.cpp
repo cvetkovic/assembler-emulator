@@ -32,7 +32,7 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			else if (&p == &staticAssemblyParsers[2])
 			{
 				r1 = TokenType::SECTION;
-				if (data == "section")
+				if (data == ".section")
 					r2 = "";
 				else
 					r2 = data;
@@ -60,6 +60,11 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			else if (&p == &staticAssemblyParsers[7])
 			{
 				r1 = TokenType::OPERAND_DECIMAL;
+				r2 = data;
+			}
+			else if (&p == &staticAssemblyParsers[8])
+			{
+				r1 = TokenType::OPERAND_HEX;
 				r2 = data;
 			}
 
