@@ -12,7 +12,8 @@ using namespace std;
 enum ScopeType
 {
 	GLOBAL,
-	LOCAL
+	LOCAL,
+	EXTERN
 };
 
 enum SectionType
@@ -62,6 +63,7 @@ private:
 public:
 	SymbolTableID InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType, unsigned long size);
 	SymbolTableEntry* GetEntryByID(SymbolTableID id);
+	SymbolTableEntry* GetEntryByName(string name);
 };
 
 /////////////////////////////////////////////////////////

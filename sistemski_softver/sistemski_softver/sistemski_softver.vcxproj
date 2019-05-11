@@ -22,11 +22,13 @@
     <ClInclude Include="assembler.h" />
     <ClInclude Include="enums.h" />
     <ClInclude Include="exceptions.h" />
+    <ClInclude Include="instruction.h" />
     <ClInclude Include="structures.h" />
     <ClInclude Include="token.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="assembler.cpp" />
+    <ClCompile Include="instruction.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="structures.cpp" />
     <ClCompile Include="token.cpp" />

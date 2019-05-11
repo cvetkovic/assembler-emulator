@@ -11,7 +11,8 @@ enum TokenType
 	SYMBOL = 5,
 	END_OF_FILE = 6,
 	OPERAND_DECIMAL = 7,
-	OPERAND_HEX = 8
+	OPERAND_HEX = 8,
+	OPERAND_REGISTER = 9
 };
 
 #endif

@@ -13,12 +13,12 @@ static const regex staticAssemblyParsers[NUMBER_OF_PARSERS] = {
 	regex("^([a-zA-Z_][a-zA-Z0-9_]*_{0,}):$"),	// label (contains ':' on end; symbol is without ':')
 	regex("^\\.(data|text|bss|section)$"),		// section
 	regex("^\\.(align|byte|equ|skip|word)$"),	// directive
-	regex("^(int|add|sub|mul|div|cmp|and|or|not|test|push|pop|call|iret|mov|shl|shr|ret|jmp)(eq|ne|gt|al)?$"),
-	regex("^[a-zA-Z_][a-zA-Z0-9]*_{0,}$"),		// symbol
+	regex("^(halt|ret|iret|(int|not|push|pop|jmp|jeq|jne|jgt|call|xchg|mov|add|sub|mul|div|cmp|and|or|xor|test|shl|shr)(b|w){0,1})$"),
+	regex("^r[0-7](h|l){0,1}$"),				// register addressing
 	regex("^.end$"),							// end of file
-	regex("^[1-9][0-9]*$"),						// decimal operand
-	regex("^0x[0-9a-fA-F]{1,}$"),				// hex operand
-	regex(""),
+	regex("^[0-9]+$"),							// operand decimal
+	regex("^0x[0-9a-fA-F]{1,}$"),				// operand hex
+	regex("^[a-zA-Z_][a-zA-Z0-9_]*$"),			// symbol
 	regex(""),
 	regex(""),
 	regex(""),

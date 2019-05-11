@@ -18,9 +18,11 @@
 #define ASM_UNDEFINED -1
 
 #include "exceptions.h"
+#include "instruction.h"
 #include "structures.h"
 #include "token.h"
 
+#include <cstdint>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -36,7 +38,7 @@ class Assembler
 private:
 	// opened -> constructor; closed -> LoadFileLocally()
 	ifstream input_file;
-	// opened -> constructor; TODO: closed ->
+	// opened -> constructor; TODO: closed -> destructor
 	ofstream output_file;
 
 	vector<vector<string>> assemblyCode;

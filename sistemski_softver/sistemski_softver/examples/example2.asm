@@ -1,6 +1,11 @@
 .section .text
+.extern eksterni_simbol
+
 test_label:
-push ebp
+pushb r7
+pushw r7
+
+.global test_label
 
 .section .data
 msg: .byte 1

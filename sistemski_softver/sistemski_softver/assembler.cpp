@@ -150,7 +150,7 @@ void Assembler::FirstPass()
 		case TokenType::DIRECTIVE:
 		{
 			if (currentSectionType == SectionType::START)
-				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside of any section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
 			currentLineTokens.pop();
@@ -171,8 +171,10 @@ void Assembler::FirstPass()
 			}
 			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
 			{
-				if (currentSectionType != SectionType::DATA)
-					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				// removed to allow user to implement new instructions
+				/*if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
+				
 				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
 					(operand.GetTokenType() != TokenType::OPERAND_HEX))
 					throw AssemblerException("Directive '.byte' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
@@ -191,8 +193,10 @@ void Assembler::FirstPass()
 			}
 			else if (currentToken.GetValue() == WORD_DIRECTIVE)
 			{
-				if (currentSectionType != SectionType::DATA)
-					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				// removed to allow user to implement new instructions
+				/*if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
+
 				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
 					(operand.GetTokenType() != TokenType::OPERAND_HEX))
 					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
@@ -294,15 +298,27 @@ void Assembler::FirstPass()
 			//	 throw AssemblerException("Access modifier '" + currentToken.GetValue() + "' must be put outside of section.", ErrorCodes::INVALID_ACCESS_MODIFIER_SECTION, lineNumber);*/
 
 			continue;
-			break;
 		}
 		case TokenType::INSTRUCTION:
 		{
 			if (currentSectionType != SectionType::TEXT)
 				throw AssemblerException("Instructions cannot be put outside of '.text' section.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
 
-			// TODO: check whether all instructions are four bytes long
-			locationCounter += 4;
+			queue<Token> params;
+
+			while (!currentLineTokens.empty())
+			{
+				Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				params.push(operand);
+
+				currentLineTokens.pop();
+			}
+
+			Instruction instruction(currentToken, params);
+
+			// TODO: if 1,4,7 are allowed for instruction size optimize by removing this 'vector<Token> params'
+
+			locationCounter += instruction.GetInstructionSize();
 
 			break;
 		}
@@ -323,7 +339,10 @@ void Assembler::FirstPass()
 void Assembler::SecondPass()
 {
 	unsigned long lineNumber = 0;
+
 	unsigned long locationCounter = 0;
+	SectionType currentSectionType = SectionType::START;
+	SectionID currentSectionNo = -1;
 
 	for (vector<string> line : assemblyCode)
 	{
@@ -342,46 +361,53 @@ void Assembler::SecondPass()
 
 		switch (currentToken.GetTokenType())
 		{
+		case TokenType::LABEL:
+		{
+			break;
+		}
 		case TokenType::ACCESS_MODIFIER:
 		{
-			/*Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+			Token labelName = Token::ParseToken(currentLineTokens.front(), lineNumber);
 			currentLineTokens.pop();
 
 			if (currentToken.GetValue() == PUBLIC_MODIFIER)
 			{
-				if (symbolTable.GetEntry(operand.GetValue()))
-					symbolTable.GetEntry(operand.GetValue())->scopeType = ScopeType::GLOBAL;
+				if (symbolTable.GetEntryByName(labelName.GetValue()))
+					symbolTable.GetEntryByName(labelName.GetValue())->scopeType = ScopeType::GLOBAL;
 			}
 			else if (currentToken.GetValue() == EXTERN_MODIFIER)
 			{
-				symbolTable.InsertSymbol(operand.GetValue(),
-										 locationCounter,
-										 TokenType::SYMBOL,
-										 ScopeType::EXTERN,
-										 currentSection,
-										 false)
-										 
+				symbolTable.InsertSymbol(labelName.GetValue(),
+					currentSectionNo,
+					ASM_UNDEFINED,
+					ASM_UNDEFINED,
+					ScopeType::EXTERN,
+					TokenType::LABEL,
+					ASM_UNDEFINED);
 			}
 			else
-				throw new AssemblerException("Access modifier directive not recognized.", ErrorCodes::SYNTAX_ACCESS_MODIFIER, lineNumber);
+				throw new AssemblerException("Access modifier directive not recognized.", ErrorCodes::SYNTAX_ACCESS_MODIFIER, lineNumber);			
 
-			// TODO: anything else here?
-			*/
+			break;
 		}
 		case TokenType::DIRECTIVE:
 		{
+			break;
 		}
 		case TokenType::SECTION:
 		{
 			// also reset location counter to zero in second-pass
 			locationCounter = 0;
+
+			currentSectionNo++;
+			currentSectionType = StringToSectionType(sectionTable.GetEntryByID(currentSectionNo)->name);
 		}
 		case TokenType::INSTRUCTION:
 		{
 		}
 		default:
 		{
-
+			// sdfsdf
 		}
 		}
 	}

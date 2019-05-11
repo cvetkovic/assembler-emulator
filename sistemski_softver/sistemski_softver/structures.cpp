@@ -26,6 +26,17 @@ SymbolTableEntry* SymbolTable::GetEntryByID(SymbolTableID id)
 		return NULL;
 }
 
+SymbolTableEntry * SymbolTable::GetEntryByName(string name)
+{
+	map<SymbolTableID, SymbolTableEntry>::iterator it;
+
+	for (it = table.begin(); it != table.end(); it++)
+		if (it->second.name == name)
+			return &it->second;
+
+	return 0;
+}
+
 SectionType IntToSectionType(int t)
 {
 	switch (t)
