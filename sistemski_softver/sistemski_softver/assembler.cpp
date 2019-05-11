@@ -78,6 +78,11 @@ void Assembler::TokenizeCurrentLine(const string& line, vector<string>& collecto
 	delete duplicate;
 }
 
+void Assembler::WriteToFile(uint8_t byte)
+{
+	throw AssemblerException("not yet implemented");
+}
+
 /* PUBLIC METHODS */
 
 void Assembler::GenerateObjectFile()
@@ -237,10 +242,6 @@ void Assembler::FirstPass()
 					TokenType::DIRECTIVE,
 					ASM_UNDEFINED);
 			}
-			else
-			{
-				// throw AssemblerException("directive not recognized");
-			}
 
 			break;
 		}
@@ -392,6 +393,102 @@ void Assembler::SecondPass()
 		}
 		case TokenType::DIRECTIVE:
 		{
+			if (currentSectionType == SectionType::START)
+				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside of any section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+
+			Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+			currentLineTokens.pop();
+
+			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+					throw AssemblerException("Directive '.align' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				unsigned long value = strtoul(operand.GetValue().c_str(), NULL, 0);
+
+				// TODO: optimize this with some math expression to calculate how much
+				//		 to add to round so that location counter could be dividable 
+				//		with 2 ^ value
+				unsigned long divisibleBy = (unsigned long)pow(2.0, value);
+				while ((locationCounter % divisibleBy) != 0)
+				{
+					locationCounter++;
+
+					WriteToFile(0);
+				}
+			}
+			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
+			{
+				// removed to allow user to implement new instructions
+				/*if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
+
+				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+					throw AssemblerException("Directive '.byte' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				uint8_t toWrite = stoi(operand.GetValue());
+				WriteToFile(toWrite);
+
+				// skip 1 * val_byte byte
+				locationCounter += 1; // strtoul(operand.GetValue().c_str(), NULL, 0);
+			}
+			else if (currentToken.GetValue() == SKIP_DIRECTIVE)
+			{
+				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL &&
+					operand.GetTokenType() != TokenType::OPERAND_HEX)
+					throw AssemblerException("Directive '.skip' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				// skip <<operand>> bytes 
+				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
+			}
+			else if (currentToken.GetValue() == WORD_DIRECTIVE)
+			{
+				// removed to allow user to implement new instructions
+				/*if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
+
+				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				// skip 2 * val_byte byte
+				locationCounter += 2; // (strtoul(operand.GetValue().c_str(), NULL, 0) << 1);
+			}
+			else if (currentToken.GetValue() == EQUIVALENCE_DIRECTIVE)
+			{
+				if (currentSectionType != SectionType::DATA)
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+
+				// Token operand holds equivalence name
+				// Token equValue holds value to which label is equivalent
+
+				if (operand.GetTokenType() != TokenType::SYMBOL)
+					throw AssemblerException("Directive '.equ' requires label-like syntax for first operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+				Token equValue = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				currentLineTokens.pop();
+
+				unsigned long value;
+
+				if (equValue.GetTokenType() == TokenType::OPERAND_DECIMAL)
+					value = strtoul(equValue.GetValue().c_str(), NULL, 0);
+				else if (equValue.GetTokenType() == TokenType::OPERAND_HEX)
+					value = stoul(equValue.GetValue(), nullptr, 0);
+				else
+				{
+					// TODO: implement equivalence expressions here if needed
+				}
+
+				symbolTable.InsertSymbol(operand.GetValue(),
+					currentSectionNo,
+					value,
+					ASM_UNDEFINED,
+					ScopeType::LOCAL,
+					TokenType::DIRECTIVE,
+					ASM_UNDEFINED);
+			}
+
 			break;
 		}
 		case TokenType::SECTION:

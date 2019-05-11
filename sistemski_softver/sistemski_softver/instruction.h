@@ -51,8 +51,8 @@ static map<string, InstructionDetails> instructionOperandMap = {
 class Instruction
 {
 private:
-	unsigned char operationCode[7] = { 0,0,0,0,0,0,0 };
-	unsigned instructionSize;
+	uint8_t operationCode[7] = { 0,0,0,0,0,0,0 };
+	uint8_t instructionSize;
 
 	enum OperandSize
 	{
@@ -65,7 +65,7 @@ public:
 	~Instruction();
 
 	unsigned GetInstructionSize() { return instructionSize; }
-	void WriteCodeToOutput(ofstream& output);
+	uint8_t* GetBytecode();
 };
 
 #endif

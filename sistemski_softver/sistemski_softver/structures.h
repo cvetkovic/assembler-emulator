@@ -78,7 +78,7 @@ struct SectionTableEntry
 	unsigned long startAddress;
 	unsigned long length;
 	SectionID entryNo;
-	SymbolTableID symbolTableEntryNo;
+	SymbolTableID symbolTableEntryNo = -1;
 
 	SectionTableEntry(string name, unsigned long startAddress, unsigned long length, SectionID entryNo) :
 		name(name), startAddress(startAddress), length(length), entryNo(entryNo) {}

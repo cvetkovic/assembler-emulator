@@ -14,7 +14,7 @@ static const regex staticAssemblyParsers[NUMBER_OF_PARSERS] = {
 	regex("^\\.(data|text|bss|section)$"),		// section
 	regex("^\\.(align|byte|equ|skip|word)$"),	// directive
 	regex("^(halt|ret|iret|(int|not|push|pop|jmp|jeq|jne|jgt|call|xchg|mov|add|sub|mul|div|cmp|and|or|xor|test|shl|shr)(b|w){0,1})$"),
-	regex("^r[0-7](h|l){0,1}$"),				// register addressing
+	regex("^r[0-7](h|l){0,1}$"),				// register direct addressing
 	regex("^.end$"),							// end of file
 	regex("^[0-9]+$"),							// operand decimal
 	regex("^0x[0-9a-fA-F]{1,}$"),				// operand hex

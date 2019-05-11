@@ -25,6 +25,7 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params)
 
 	operationCode[0] = instructionOperandMap.at(instructionMnemonic).opCode << 3;
 	operationCode[0] = operationCode[0] | (operandSize << 2);
+	instructionSize++;
 
 	// destination variable used for constraint checking on specific addressing modes
 	bool destination = true;
@@ -33,13 +34,17 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params)
 		Token operand = params.front();
 		params.pop();
 
-		/*switch (operand.GetTokenType())
+		switch (operand.GetTokenType())
 		{
-		case TokenType::OPERAND_IMMEDIATELY:
-		{
-
-		}
 		case TokenType::OPERAND_REGISTER_DIRECT:
+		{
+			char registerNumber = operand.GetValue().at(1);
+			int c = registerNumber - '0';
+
+			operationCode[1] = (1 << 5) | (c << 1);
+			instructionSize++;
+		}
+		/*case TokenType::OPERAND_IMMEDIATELY:
 		{
 
 		}
@@ -58,12 +63,12 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params)
 		case TokenType::OPERAND_MEMORY:
 		{
 
-		}
+		}*/
 		default:
 		{
 			throw AssemblerException("");
 		}
-		}*/
+		}
 
 		destination = false;
 	}
@@ -76,8 +81,7 @@ Instruction::~Instruction()
 {
 }
 
-void Instruction::WriteCodeToOutput(ofstream& output)
+uint8_t* Instruction::GetBytecode()
 {
-	/*for (int i = 0; i < instructionSize; i++)
-		output.write(operationCode[i]);*/
+	return nullptr;
 }

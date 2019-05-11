@@ -22,7 +22,7 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			if (&p == &staticAssemblyParsers[0])
 			{
 				r1 = TokenType::ACCESS_MODIFIER;
-				r2 = data;				// from 1 to end
+				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[1])
 			{
@@ -49,7 +49,7 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			}
 			else if (&p == &staticAssemblyParsers[5])
 			{
-				r1 = TokenType::OPERAND_REGISTER;
+				r1 = TokenType::OPERAND_REGISTER_DIRECT;
 				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[6])
