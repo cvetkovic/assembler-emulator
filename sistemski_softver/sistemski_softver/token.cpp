@@ -59,17 +59,22 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			}
 			else if (&p == &staticAssemblyParsers[7])
 			{
-				r1 = TokenType::OPERAND_DECIMAL;
+				r1 = TokenType::OPERAND_IMMEDIATELY_DECIMAL;
 				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[8])
 			{
-				r1 = TokenType::OPERAND_HEX;
+				r1 = TokenType::OPERAND_IMMEDIATELY_HEX;
 				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[9])	// OPERAND_REGISTER has to go before SYMBOL
 			{
 				r1 = TokenType::SYMBOL;
+				r2 = data;
+			}
+			else if (&p == &staticAssemblyParsers[10])
+			{
+				r1 = TokenType::OPERAND_REGISTER_INDIRECT;
 				r2 = data;
 			}
 

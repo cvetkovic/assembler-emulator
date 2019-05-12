@@ -162,7 +162,7 @@ void Assembler::FirstPass()
 
 			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+				if (operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL)
 					throw AssemblerException("Directive '.align' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				unsigned long value = strtoul(operand.GetValue().c_str(), NULL, 0);
@@ -180,8 +180,8 @@ void Assembler::FirstPass()
 				/*if (currentSectionType != SectionType::DATA)
 					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
 				
-				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
-					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+				if ((operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
 					throw AssemblerException("Directive '.byte' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 				
 				// skip 1 * val_byte byte
@@ -189,8 +189,8 @@ void Assembler::FirstPass()
 			}
 			else if (currentToken.GetValue() == SKIP_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL &&
-					operand.GetTokenType() != TokenType::OPERAND_HEX)
+				if (operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL &&
+					operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX)
 					throw AssemblerException("Directive '.skip' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip <<operand>> bytes 
@@ -202,8 +202,8 @@ void Assembler::FirstPass()
 				/*if (currentSectionType != SectionType::DATA)
 					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
 
-				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
-					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+				if ((operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
 					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip 2 * val_byte byte
@@ -225,9 +225,9 @@ void Assembler::FirstPass()
 
 				unsigned long value;
 
-				if (equValue.GetTokenType() == TokenType::OPERAND_DECIMAL)
+				if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL)
 					value = strtoul(equValue.GetValue().c_str(), NULL, 0);
-				else if (equValue.GetTokenType() == TokenType::OPERAND_HEX)
+				else if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 					value = stoul(equValue.GetValue(), nullptr, 0);
 				else
 				{
@@ -306,7 +306,6 @@ void Assembler::FirstPass()
 				throw AssemblerException("Instructions cannot be put outside of '.text' section.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
 
 			queue<Token> params;
-
 			while (!currentLineTokens.empty())
 			{
 				Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
@@ -315,10 +314,7 @@ void Assembler::FirstPass()
 				currentLineTokens.pop();
 			}
 
-			Instruction instruction(currentToken, params);
-
-			// TODO: if 1,4,7 are allowed for instruction size optimize by removing this 'vector<Token> params'
-
+ 			Instruction instruction(currentToken, params, lineNumber, symbolTable, true);
 			locationCounter += instruction.GetInstructionSize();
 
 			break;
@@ -401,7 +397,7 @@ void Assembler::SecondPass()
 
 			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL)
+				if (operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL)
 					throw AssemblerException("Directive '.align' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				unsigned long value = strtoul(operand.GetValue().c_str(), NULL, 0);
@@ -423,8 +419,8 @@ void Assembler::SecondPass()
 				/*if (currentSectionType != SectionType::DATA)
 					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
 
-				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
-					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+				if ((operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
 					throw AssemblerException("Directive '.byte' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				uint8_t toWrite = stoi(operand.GetValue());
@@ -435,8 +431,8 @@ void Assembler::SecondPass()
 			}
 			else if (currentToken.GetValue() == SKIP_DIRECTIVE)
 			{
-				if (operand.GetTokenType() != TokenType::OPERAND_DECIMAL &&
-					operand.GetTokenType() != TokenType::OPERAND_HEX)
+				if (operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL &&
+					operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX)
 					throw AssemblerException("Directive '.skip' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip <<operand>> bytes 
@@ -448,8 +444,8 @@ void Assembler::SecondPass()
 				/*if (currentSectionType != SectionType::DATA)
 					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);*/
 
-				if ((operand.GetTokenType() != TokenType::OPERAND_DECIMAL) &&
-					(operand.GetTokenType() != TokenType::OPERAND_HEX))
+				if ((operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL) &&
+					(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
 					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip 2 * val_byte byte
@@ -471,9 +467,9 @@ void Assembler::SecondPass()
 
 				unsigned long value;
 
-				if (equValue.GetTokenType() == TokenType::OPERAND_DECIMAL)
+				if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL)
 					value = strtoul(equValue.GetValue().c_str(), NULL, 0);
-				else if (equValue.GetTokenType() == TokenType::OPERAND_HEX)
+				else if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 					value = stoul(equValue.GetValue(), nullptr, 0);
 				else
 				{
@@ -501,6 +497,21 @@ void Assembler::SecondPass()
 		}
 		case TokenType::INSTRUCTION:
 		{
+			queue<Token> params;
+			while (!currentLineTokens.empty())
+			{
+				Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				params.push(operand);
+
+				currentLineTokens.pop();
+			}
+
+			Instruction instruction(currentToken, params, lineNumber, symbolTable, true);
+			locationCounter += instruction.GetInstructionSize();
+
+			instruction.WriteToObjectFile(output_file);
+
+			break;
 		}
 		default:
 		{

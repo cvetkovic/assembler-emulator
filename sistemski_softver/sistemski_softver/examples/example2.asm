@@ -2,8 +2,10 @@
 .extern eksterni_simbol
 
 test_label:
-pushb r7
-pushw r7
+mov r7, r2[5]
+mov r7, r2[0xfa]
+mov r7, r2[symbol]
+mov r7, r2[-4]
 
 .global test_label
 

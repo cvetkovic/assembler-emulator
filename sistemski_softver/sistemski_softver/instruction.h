@@ -52,7 +52,7 @@ class Instruction
 {
 private:
 	uint8_t operationCode[7] = { 0,0,0,0,0,0,0 };
-	uint8_t instructionSize;
+	uint8_t instructionSize = 0;
 
 	enum OperandSize
 	{
@@ -61,11 +61,10 @@ private:
 	};
 
 public:
-	Instruction(const Token& instruction, queue<Token>& params);
-	~Instruction();
+	Instruction(const Token& instruction, queue<Token>& params, unsigned long lineNumber, SymbolTable& symbolTable, bool firstPass = false);
 
 	unsigned GetInstructionSize() { return instructionSize; }
-	uint8_t* GetBytecode();
+	void WriteToObjectFile(ofstream& output);
 };
 
 #endif
