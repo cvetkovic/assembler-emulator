@@ -54,7 +54,7 @@ private:
 
 	void StripeOffCommentsAndLoadLocally();
 	void TokenizeCurrentLine(const string& line, vector<string>& collector);
-	void WriteToFile(uint8_t byte);
+	inline void WriteByteToOutput(uint8_t byte);
 
 	void FirstPass();
 	void SecondPass();

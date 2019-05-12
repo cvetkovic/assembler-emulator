@@ -44,17 +44,40 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 		{
 		case TokenType::OPERAND_REGISTER_DIRECT:
 		{
+
 			char registerNumber = operand.GetValue().at(1);
 			int c = registerNumber - '0';
+			int mode = 0;
+
+			if (destination && c == 15)
+				throw AssemblerException("Not allowed to write to PSW register.", ErrorCodes::INVALID_OPERAND, lineNumber);
+
+			if (operandSize == OperandSize::BYTE)
+			{
+				if (operand.GetValue().size() != 3)
+					throw AssemblerException("Register higher or lower bytes to use is byte addressing mode is not specified.", ErrorCodes::INVALID_OPERAND, lineNumber);
+				
+				char hl = operand.GetValue().at(2);
+				if (hl == 'l')
+					mode = 0;
+				else
+					mode = 1;
+			}
+			else
+			{
+				if (operand.GetValue().size() == 3)
+					throw AssemblerException("Register higher or lower bytes is not allowed to use if instruction addressing mode is not specified to be a byte one.", ErrorCodes::INVALID_OPERAND, lineNumber);
+			}
 
 			if (c >= 8 || c < 0)
 				throw AssemblerException("Specified register is not supported by the underlying processor architecture.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
-			operationCode[writeToPosition++] = (1 << 5) | (c << 1);
+			operationCode[writeToPosition++] = (1 << 5) | (c << 1) | mode;
 			instructionSize++;
 
 			break;
 		}
+		case TokenType::OPERAND_IMMEDIATELY_SYMBOL:
 		case TokenType::OPERAND_IMMEDIATELY_DECIMAL:
 		case TokenType::OPERAND_IMMEDIATELY_HEX:
 		{
@@ -62,10 +85,13 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 				throw AssemblerException("Immediately addressing mode is not a valid mode for destination operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 			operationCode[writeToPosition++] = 0; // set address mode to 0x00
+			instructionSize++;
 
 			long valueToWrite;	// 16-bit long field
 			if (operand.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 				valueToWrite = (unsigned long)strtol(operand.GetValue().c_str(), 0, 16);
+			else if (operand.GetTokenType() == OPERAND_IMMEDIATELY_SYMBOL)
+				valueToWrite = symbolTable.GetEntryByName(operand.GetValue())->offset;
 			else
 				valueToWrite = stoul(operand.GetValue());
 
@@ -109,6 +135,8 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 
 			if (c >= 8 || c < 0)
 				throw AssemblerException("Specified register is not supported by the underlying processor architecture.", ErrorCodes::INVALID_OPERAND, lineNumber);
+			else if (c == 15)
+				throw AssemblerException("Not allowed to use register indirect mode with PSW as base register.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 			long valueToWrite = -1;	// 16-bit long field
 			if (offset.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
@@ -124,13 +152,13 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 			else
 				valueToWrite = stoul(offset.GetValue());
 
-			if (valueToWrite == 0 && operand.GetTokenType() != TokenType::SYMBOL)
+			if (valueToWrite == 0 && offset.GetTokenType() != TokenType::SYMBOL)
 			{
 				// write addressing opcode
 				operationCode[writeToPosition++] = (2 << 5) | (c << 1);
 				instructionSize++;
 			}
-			else if ((unsigned long)valueToWrite <= 0xFF && operand.GetTokenType() != TokenType::SYMBOL)
+			else if (valueToWrite >= -128 && valueToWrite <= 127 && offset.GetTokenType() != TokenType::SYMBOL)
 			{
 				operationCode[writeToPosition++] = (3 << 5) | (c << 1);
 				instructionSize++;
@@ -143,25 +171,62 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 				operationCode[writeToPosition++] = (3 << 5) | (c << 1);
 				instructionSize++;
 
-				// because symbol may not be known in first pass
-				if (!firstPass)
-				{
-					operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
-					operationCode[writeToPosition++] = (uint8_t)((valueToWrite >> 8) & 0xFF);
-				}
+				operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
+				operationCode[writeToPosition++] = (uint8_t)((valueToWrite >> 8) & 0xFF);
 
 				instructionSize += 2;
 			}
 
 			break;
 		}
-		/*case TokenType::OPERAND_MEMORY:
+		case TokenType::OPERAND_PC_RELATIVE_SYMBOL:
 		{
+			operationCode[writeToPosition++] = (4 << 5) | (7 << 1);
+			instructionSize++;
+
+			unsigned long valueToWrite = symbolTable.GetEntryByName(operand.GetValue())->offset;
+			operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
+			operationCode[writeToPosition++] = (uint8_t)((valueToWrite >> 8) & 0xFF);
+
+			instructionSize += 2;
+
 			break;
-		}*/
+		}
+		case TokenType::SYMBOL:
+		case TokenType::OPERAND_MEMORY_DIRECT_DECIMAL:
+		case TokenType::OPERAND_MEMORY_DIRECT_HEX:
+		{
+			// TODO: ?two memory accesses in the same instruction?
+			operationCode[writeToPosition++] = 5 << 5; // set address mode to 0x00
+			instructionSize++;
+
+			long valueToWrite;	// 16-bit long field
+			if (operand.GetTokenType() == TokenType::OPERAND_MEMORY_DIRECT_HEX)
+				valueToWrite = (unsigned long)strtol(operand.GetValue().c_str(), 0, 16);
+			else if (operand.GetTokenType() == TokenType::SYMBOL)
+				valueToWrite = symbolTable.GetEntryByName(operand.GetValue())->offset;
+			else
+				valueToWrite = stoul(operand.GetValue());
+
+			if (operandSize == OperandSize::BYTE)
+			{
+				operationCode[writeToPosition++] = (uint8_t)valueToWrite;
+
+				instructionSize++;
+			}
+			else
+			{
+				operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
+				operationCode[writeToPosition++] = (uint8_t)((valueToWrite >> 8) & 0xFF);
+
+				instructionSize += 2;
+			}
+
+			break;
+		}
 		default:
 		{
-			throw AssemblerException("");
+			throw AssemblerException("Addressing mode not recognized.", ErrorCodes::INVALID_OPERAND, lineNumber);
 		}
 		}
 
@@ -172,7 +237,5 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 void Instruction::WriteToObjectFile(ofstream& output)
 {
 	for (int i = 0; i < instructionSize; i++)
-		output << operationCode[i] << " ";
-
-	output << endl;
+		output << operationCode[i];
 }

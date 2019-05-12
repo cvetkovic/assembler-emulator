@@ -12,6 +12,32 @@ string Token::GetValue() const
 
 Token Token::ParseToken(string data, unsigned long lineNumber)
 {
+	if (data.size() == 0)
+		Token(TokenType::INVALID, 0);
+
+	data = regex_replace(data, regex("^sp"), "r6");
+	data = regex_replace(data, regex("^pc"), "r7");
+	data = regex_replace(data, regex("^psw"), "r15");
+
+	bool memoryDirect = false;
+	bool immediatelySymbol = false;
+	bool pcRelativeSymbol = false;
+	if (data.at(0) == '*')
+	{
+		data = data.substr(1, data.size() - 1);
+		memoryDirect = true;
+	}
+	else if (data.at(0) == '&')
+	{
+		data = data.substr(1, data.size() - 1);
+		immediatelySymbol = true;
+	}
+	else if (data.at(0) == '$')
+	{
+		data = data.substr(1, data.size() - 1);
+		pcRelativeSymbol = true;
+	}
+
 	for (const regex& p : staticAssemblyParsers)
 	{
 		if (regex_match(data, p))
@@ -59,17 +85,31 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			}
 			else if (&p == &staticAssemblyParsers[7])
 			{
-				r1 = TokenType::OPERAND_IMMEDIATELY_DECIMAL;
+				if (!memoryDirect)
+					r1 = TokenType::OPERAND_IMMEDIATELY_DECIMAL;
+				else
+					r1 = TokenType::OPERAND_MEMORY_DIRECT_DECIMAL;
+
 				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[8])
 			{
-				r1 = TokenType::OPERAND_IMMEDIATELY_HEX;
+				if (!memoryDirect)
+					r1 = TokenType::OPERAND_IMMEDIATELY_HEX;
+				else
+					r1 = TokenType::OPERAND_MEMORY_DIRECT_HEX;
+
 				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[9])	// OPERAND_REGISTER has to go before SYMBOL
 			{
-				r1 = TokenType::SYMBOL;
+				if (immediatelySymbol)
+					r1 = TokenType::OPERAND_IMMEDIATELY_SYMBOL;
+				else if (pcRelativeSymbol)
+					r1 = TokenType::OPERAND_PC_RELATIVE_SYMBOL;
+				else
+					r1 = TokenType::SYMBOL;
+
 				r2 = data;
 			}
 			else if (&p == &staticAssemblyParsers[10])

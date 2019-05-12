@@ -78,12 +78,10 @@ void Assembler::TokenizeCurrentLine(const string& line, vector<string>& collecto
 	delete duplicate;
 }
 
-void Assembler::WriteToFile(uint8_t byte)
+inline void Assembler::WriteByteToOutput(uint8_t byte)
 {
-	throw AssemblerException("not yet implemented");
+	output_file << byte;
 }
-
-/* PUBLIC METHODS */
 
 void Assembler::GenerateObjectFile()
 {
@@ -377,7 +375,7 @@ void Assembler::SecondPass()
 				symbolTable.InsertSymbol(labelName.GetValue(),
 					currentSectionNo,
 					ASM_UNDEFINED,
-					ASM_UNDEFINED,
+					0,
 					ScopeType::EXTERN,
 					TokenType::LABEL,
 					ASM_UNDEFINED);
@@ -409,8 +407,7 @@ void Assembler::SecondPass()
 				while ((locationCounter % divisibleBy) != 0)
 				{
 					locationCounter++;
-
-					WriteToFile(0);
+					WriteByteToOutput(0);
 				}
 			}
 			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
@@ -423,8 +420,13 @@ void Assembler::SecondPass()
 					(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
 					throw AssemblerException("Directive '.byte' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
-				uint8_t toWrite = stoi(operand.GetValue());
-				WriteToFile(toWrite);
+				unsigned long toWrite = stoi(operand.GetValue());
+				if (operand.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL)
+					toWrite = stoi(operand.GetValue());
+				else if (operand.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
+					toWrite = stoul(operand.GetValue(), nullptr, 0);
+
+				WriteByteToOutput((uint8_t)toWrite);
 
 				// skip 1 * val_byte byte
 				locationCounter += 1; // strtoul(operand.GetValue().c_str(), NULL, 0);
@@ -436,7 +438,12 @@ void Assembler::SecondPass()
 					throw AssemblerException("Directive '.skip' expects decimal operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				// skip <<operand>> bytes 
-				locationCounter += strtoul(operand.GetValue().c_str(), NULL, 0);
+				unsigned long howMany = strtoul(operand.GetValue().c_str(), NULL, 0);
+
+				for (unsigned long i = 0; i < howMany; i++)
+					WriteByteToOutput(0);
+
+				locationCounter += howMany;
 			}
 			else if (currentToken.GetValue() == WORD_DIRECTIVE)
 			{
@@ -448,41 +455,16 @@ void Assembler::SecondPass()
 					(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
 					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
+				unsigned long data = strtoul(operand.GetValue().c_str(), NULL, 0);
+				WriteByteToOutput((uint8_t)(data & 0xFF));
+				WriteByteToOutput((uint8_t)((data >> 8) & 0xFF));
+
 				// skip 2 * val_byte byte
-				locationCounter += 2; // (strtoul(operand.GetValue().c_str(), NULL, 0) << 1);
+				locationCounter += 2;
 			}
 			else if (currentToken.GetValue() == EQUIVALENCE_DIRECTIVE)
 			{
-				if (currentSectionType != SectionType::DATA)
-					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
-
-				// Token operand holds equivalence name
-				// Token equValue holds value to which label is equivalent
-
-				if (operand.GetTokenType() != TokenType::SYMBOL)
-					throw AssemblerException("Directive '.equ' requires label-like syntax for first operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
-
-				Token equValue = Token::ParseToken(currentLineTokens.front(), lineNumber);
-				currentLineTokens.pop();
-
-				unsigned long value;
-
-				if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL)
-					value = strtoul(equValue.GetValue().c_str(), NULL, 0);
-				else if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
-					value = stoul(equValue.GetValue(), nullptr, 0);
-				else
-				{
-					// TODO: implement equivalence expressions here if needed
-				}
-
-				symbolTable.InsertSymbol(operand.GetValue(),
-					currentSectionNo,
-					value,
-					ASM_UNDEFINED,
-					ScopeType::LOCAL,
-					TokenType::DIRECTIVE,
-					ASM_UNDEFINED);
+				// nothing here
 			}
 
 			break;
@@ -494,6 +476,8 @@ void Assembler::SecondPass()
 
 			currentSectionNo++;
 			currentSectionType = StringToSectionType(sectionTable.GetEntryByID(currentSectionNo)->name);
+
+			break;
 		}
 		case TokenType::INSTRUCTION:
 		{
@@ -506,16 +490,18 @@ void Assembler::SecondPass()
 				currentLineTokens.pop();
 			}
 
-			Instruction instruction(currentToken, params, lineNumber, symbolTable, true);
+			Instruction instruction(currentToken, params, lineNumber, symbolTable, false);
 			locationCounter += instruction.GetInstructionSize();
 
 			instruction.WriteToObjectFile(output_file);
 
 			break;
 		}
+		case TokenType::END_OF_FILE:
+			break;
 		default:
 		{
-			// sdfsdf
+			throw AssemblerException("Not allowed token detected in the second pass of assembler.", ErrorCodes::NOT_ALLOWED_TOKEN, lineNumber);
 		}
 		}
 	}

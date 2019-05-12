@@ -51,6 +51,8 @@ public:
 			report += " (" + to_string(int(errorCode)) + ")";
 		if (location != -1)
 			report += " at line " + to_string(location) + ": ";
+		else
+			report += ": ";
 
 		report += message;
 
