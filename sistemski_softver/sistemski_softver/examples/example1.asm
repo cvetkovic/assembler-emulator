@@ -1,15 +1,16 @@
-.data
-#.asciz "Zdravo\n"
+.section .data
+broj_a:
+.byte 10
+broj_b:
+.byte 20
 
-.text
 .global saberi
 
-saberi: enter 0, 0
+.section .text
 
-mov eax, [ebp + 8]			# eax = a;
-mov ecx, [ebp + 12]			# ecx = b;
+saberi:
+mov r0, broj_a
+mov r1, broj_b
+add r0, r1
 
-add eax, ecx				# eax = a + b;
-
-leave
 ret

@@ -44,7 +44,6 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 		{
 		case TokenType::OPERAND_REGISTER_DIRECT:
 		{
-
 			char registerNumber = operand.GetValue().at(1);
 			int c = registerNumber - '0';
 			int mode = 0;

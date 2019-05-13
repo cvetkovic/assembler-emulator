@@ -5,7 +5,9 @@
 #include "exceptions.h"
 #include "token.h"
 
+#include <iomanip>
 #include <map>
+#include <sstream>
 #include <string>
 using namespace std;
 
@@ -64,6 +66,8 @@ public:
 	SymbolTableID InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType, unsigned long size);
 	SymbolTableEntry* GetEntryByID(SymbolTableID id);
 	SymbolTableEntry* GetEntryByName(string name);
+
+	stringstream GenerateTextualSymbolTable();
 };
 
 /////////////////////////////////////////////////////////
@@ -93,6 +97,8 @@ private:
 public:
 	SectionID InsertSection(string name, unsigned long startAddress, unsigned long length);
 	SectionTableEntry* GetEntryByID(SectionID id);
+
+	stringstream GenerateTextualSectionTable();
 };
 
 #endif

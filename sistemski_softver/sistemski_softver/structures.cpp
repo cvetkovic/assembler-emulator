@@ -37,6 +37,44 @@ SymbolTableEntry * SymbolTable::GetEntryByName(string name)
 	return 0;
 }
 
+stringstream SymbolTable::GenerateTextualSymbolTable()
+{
+	stringstream output;
+
+	output << left;
+	output << setw(15) << "Name";
+	output << setw(15) << "SectionNumber";
+	output << setw(15) << "Value";
+	output << setw(15) << "Offset";
+	output << setw(15) << "ScopeType";
+	output << setw(15) << "TokenType";
+	output << setw(15) << "Size";
+	output << setw(15) << "EntryNumber";
+	output << endl;
+
+	map<SymbolTableID, SymbolTableEntry>::iterator it;
+
+	for (it = table.begin(); it != table.end(); it++)
+	{
+		output << left;
+		output << setw(15) << it->second.name;
+		output << setw(15) << it->second.sectionNumber;
+		output << setw(15) << it->second.value;
+		output << setw(15) << it->second.offset;
+		output << setw(15) << it->second.scopeType;
+		output << setw(15) << it->second.tokenType;
+		output << setw(15) << it->second.size;
+		output << setw(15) << it->second.entryNo;
+		output << endl;
+	}
+
+	return output;
+}
+
+///////////////////////////////////////////////////////////
+////////////////////// SECTION TABLE //////////////////////
+///////////////////////////////////////////////////////////
+
 SectionType IntToSectionType(int t)
 {
 	switch (t)
@@ -102,4 +140,32 @@ SectionID SectionTable::InsertSection(string name, unsigned long startAddress, u
 SectionTableEntry* SectionTable::GetEntryByID(SectionID id)
 {
 	return &table.at(id);
+}
+
+stringstream SectionTable::GenerateTextualSectionTable()
+{
+	stringstream output;
+
+	output << left;
+	output << setw(15) << "Name";
+	output << setw(15) << "StartAddress";
+	output << setw(15) << "Length";
+	output << setw(15) << "EntryNumber";
+	output << setw(15) << "SymbolTableEntryNumber";
+	output << endl;
+
+	map<SectionID, SectionTableEntry>::iterator it;
+
+	for (it = table.begin(); it != table.end(); it++)
+	{
+		output << left;
+		output << setw(15) << it->second.name;
+		output << setw(15) << it->second.startAddress;
+		output << setw(15) << it->second.length;
+		output << setw(15) << it->second.entryNo;
+		output << setw(15) << it->second.symbolTableEntryNo;
+		output << endl;
+	}
+
+	return output;
 }

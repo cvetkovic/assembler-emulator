@@ -7,7 +7,7 @@ Assembler::Assembler(string input_file_url, string output_file_url)
 	// opening input file in input mode and output file in output mode
 	// truncating all the previously data in it
 	this->input_file.open(input_file_url, ios::in);
-	this->output_file.open(output_file_url, ios::out | ios::trunc);
+	this->output_file.open(output_file_url, ios::binary | ios::out | ios::trunc);
 	this->txt_output_file.open(output_file_url + ".txt", ios::out | ios::trunc);
 
 	if (!input_file.is_open())
@@ -84,7 +84,7 @@ void Assembler::TokenizeCurrentLine(const string& line, vector<string>& collecto
 
 inline void Assembler::WriteToOutput(uint8_t byte)
 {
-	output_file << byte;
+	output_file.write(reinterpret_cast<char*>(&byte), sizeof(byte));
 
 	txt_output_file << hex << ((byte >> 4) & 0xF);
 	txt_output_file << hex << (byte & 0xF);
@@ -512,10 +512,13 @@ void Assembler::SecondPass()
 			// also reset location counter to zero in second-pass
 			locationCounter = 0;
 
+			if (currentSectionNo != -1)
+				WriteToOutput("\n\n");
+
 			currentSectionNo++;
 			currentSectionType = StringToSectionType(sectionTable.GetEntryByID(currentSectionNo)->name);
 
-			WriteToOutput("\n\n<!-- section '");
+			WriteToOutput("<!-- section '");
 			WriteToOutput(sectionTable.GetEntryByID(currentSectionNo)->name);
 			WriteToOutput("' -->\n");
 
@@ -547,6 +550,14 @@ void Assembler::SecondPass()
 		}
 		}
 	}
+
+	// SYMBOL TABLE
+	WriteToOutput("\n<!-- symbol table -->\n");
+	WriteToOutput(symbolTable.GenerateTextualSymbolTable().str());
+
+	// SECTION TABLE
+	WriteToOutput("\n<!-- section table -->\n");
+	WriteToOutput(sectionTable.GenerateTextualSectionTable().str());
 
 	/* NOTE: if TNS should be added this is the place to do it.
 			 linked list of dependent symbols; removing of tail nodes until null returned
