@@ -28,9 +28,12 @@
 #include <fstream>
 #include <map>
 #include <queue>
+#include <sstream>
 #include <string>
 #include <vector>
 using namespace std;
+
+#define BYTES_INLINE 16
 
 class Assembler
 {
@@ -40,6 +43,7 @@ private:
 	ifstream input_file;
 	// opened -> constructor; TODO: closed -> destructor
 	ofstream output_file;
+	ofstream txt_output_file;
 
 	vector<vector<string>> assemblyCode;
 	
@@ -52,9 +56,13 @@ private:
 			 about section start position and size
 	*/
 
+	int currentBytesInline = 0;
+
 	void StripeOffCommentsAndLoadLocally();
 	void TokenizeCurrentLine(const string& line, vector<string>& collector);
-	inline void WriteByteToOutput(uint8_t byte);
+	inline void WriteToOutput(uint8_t byte);
+	inline void WriteToOutput(const Instruction& instruction);
+	inline void WriteToOutput(string text);
 
 	void FirstPass();
 	void SecondPass();

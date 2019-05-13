@@ -204,7 +204,8 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 			if (operand.GetTokenType() == TokenType::OPERAND_MEMORY_DIRECT_HEX)
 				valueToWrite = (unsigned long)strtol(operand.GetValue().c_str(), 0, 16);
 			else if (operand.GetTokenType() == TokenType::SYMBOL)
-				valueToWrite = symbolTable.GetEntryByName(operand.GetValue())->offset;
+				if (symbolTable.GetEntryByName(operand.GetValue()) != 0)
+					valueToWrite = symbolTable.GetEntryByName(operand.GetValue())->offset;
 			else
 				valueToWrite = stoul(operand.GetValue());
 
@@ -232,10 +233,4 @@ Instruction::Instruction(const Token & instruction, queue<Token>& params, unsign
 
 		destination = false;
 	}
-}
-
-void Instruction::WriteToObjectFile(ofstream& output)
-{
-	for (int i = 0; i < instructionSize; i++)
-		output << operationCode[i];
 }

@@ -8,16 +8,20 @@ Assembler::Assembler(string input_file_url, string output_file_url)
 	// truncating all the previously data in it
 	this->input_file.open(input_file_url, ios::in);
 	this->output_file.open(output_file_url, ios::out | ios::trunc);
+	this->txt_output_file.open(output_file_url + ".txt", ios::out | ios::trunc);
 
 	if (!input_file.is_open())
 		throw AssemblerException("Cannot open input file.", ErrorCodes::IO_INPUT_EXCEPTION);
 	else if (!output_file.is_open())
 		throw AssemblerException("Cannot open output file.", ErrorCodes::IO_OUTPUT_EXCEPTION);
+	else if (!txt_output_file.is_open())
+		throw AssemblerException("Cannot open textual output file.", ErrorCodes::IO_OUTPUT_EXCEPTION);
 }
 
 Assembler::~Assembler()
 {
 	output_file.close();
+	txt_output_file.close();
 }
 
 /* PRIVATE METHODS */
@@ -78,9 +82,43 @@ void Assembler::TokenizeCurrentLine(const string& line, vector<string>& collecto
 	delete duplicate;
 }
 
-inline void Assembler::WriteByteToOutput(uint8_t byte)
+inline void Assembler::WriteToOutput(uint8_t byte)
 {
 	output_file << byte;
+
+	txt_output_file << hex << ((byte >> 4) & 0xF);
+	txt_output_file << hex << (byte & 0xF);
+	if (++currentBytesInline == BYTES_INLINE)
+	{
+		currentBytesInline = 0;
+		txt_output_file << endl;
+	}
+	else
+		txt_output_file << " ";
+	
+}
+
+inline void Assembler::WriteToOutput(const Instruction& instruction)
+{
+	for (int i = 0; i < instruction.instructionSize; i++)
+	{
+		output_file << instruction.operationCode[i];
+
+		txt_output_file << hex << ((instruction.operationCode[i] >> 4) & 0xF);
+		txt_output_file << hex << (instruction.operationCode[i] & 0xF);
+		if (++currentBytesInline == BYTES_INLINE)
+		{
+			currentBytesInline = 0;
+			txt_output_file << endl;
+		}
+		else
+			txt_output_file << " ";
+	}
+}
+
+inline void Assembler::WriteToOutput(string text)
+{
+	txt_output_file << text;
 }
 
 void Assembler::GenerateObjectFile()
@@ -407,7 +445,7 @@ void Assembler::SecondPass()
 				while ((locationCounter % divisibleBy) != 0)
 				{
 					locationCounter++;
-					WriteByteToOutput(0);
+					WriteToOutput(0);
 				}
 			}
 			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
@@ -426,7 +464,7 @@ void Assembler::SecondPass()
 				else if (operand.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 					toWrite = stoul(operand.GetValue(), nullptr, 0);
 
-				WriteByteToOutput((uint8_t)toWrite);
+				WriteToOutput((uint8_t)toWrite);
 
 				// skip 1 * val_byte byte
 				locationCounter += 1; // strtoul(operand.GetValue().c_str(), NULL, 0);
@@ -441,7 +479,7 @@ void Assembler::SecondPass()
 				unsigned long howMany = strtoul(operand.GetValue().c_str(), NULL, 0);
 
 				for (unsigned long i = 0; i < howMany; i++)
-					WriteByteToOutput(0);
+					WriteToOutput(0);
 
 				locationCounter += howMany;
 			}
@@ -456,8 +494,8 @@ void Assembler::SecondPass()
 					throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 				unsigned long data = strtoul(operand.GetValue().c_str(), NULL, 0);
-				WriteByteToOutput((uint8_t)(data & 0xFF));
-				WriteByteToOutput((uint8_t)((data >> 8) & 0xFF));
+				WriteToOutput((uint8_t)(data & 0xFF));
+				WriteToOutput((uint8_t)((data >> 8) & 0xFF));
 
 				// skip 2 * val_byte byte
 				locationCounter += 2;
@@ -477,6 +515,10 @@ void Assembler::SecondPass()
 			currentSectionNo++;
 			currentSectionType = StringToSectionType(sectionTable.GetEntryByID(currentSectionNo)->name);
 
+			WriteToOutput("\n\n<!-- section '");
+			WriteToOutput(sectionTable.GetEntryByID(currentSectionNo)->name);
+			WriteToOutput("' -->\n");
+
 			break;
 		}
 		case TokenType::INSTRUCTION:
@@ -493,7 +535,7 @@ void Assembler::SecondPass()
 			Instruction instruction(currentToken, params, lineNumber, symbolTable, false);
 			locationCounter += instruction.GetInstructionSize();
 
-			instruction.WriteToObjectFile(output_file);
+			WriteToOutput(instruction);
 
 			break;
 		}

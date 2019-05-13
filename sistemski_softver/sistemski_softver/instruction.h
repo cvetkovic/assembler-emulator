@@ -64,7 +64,8 @@ public:
 	Instruction(const Token& instruction, queue<Token>& params, unsigned long lineNumber, SymbolTable& symbolTable, bool firstPass = false);
 
 	unsigned GetInstructionSize() { return instructionSize; }
-	void WriteToObjectFile(ofstream& output);
+
+	friend class Assembler;
 };
 
 #endif
