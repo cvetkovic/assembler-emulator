@@ -117,6 +117,11 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 				r1 = TokenType::OPERAND_REGISTER_INDIRECT;
 				r2 = data;
 			}
+			else if (&p == &staticAssemblyParsers[11])
+			{
+				r1 = TokenType::FLAGS;
+				r2 = data.substr(1, data.size() - 2);
+			}
 
 			return Token(r1, r2);
 		}

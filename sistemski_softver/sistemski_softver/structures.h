@@ -5,11 +5,19 @@
 #include "exceptions.h"
 #include "token.h"
 
+#include <bitset>
 #include <iomanip>
 #include <map>
 #include <sstream>
 #include <string>
 using namespace std;
+
+#define FLAG_BSS		0x20
+#define FLAG_NOT_LOADED	0x10
+#define FLAG_WRITABLE	0x08
+#define FLAG_DATA		0x04
+#define FLAG_READ_ONLY	0x02
+#define FLAG_EXECUTABLE	0x01
 
 enum ScopeType
 {
@@ -38,11 +46,23 @@ enum TokenType : int;
 /////////////////////////////////////////////////////////
 
 typedef unsigned long SymbolTableID;
+typedef unsigned long SectionID;
+typedef unsigned long RelocationID;
+
+enum SectionPermissions
+{
+	BSS = FLAG_BSS,
+	NOT_LOADED = FLAG_NOT_LOADED,
+	WRITABLE = FLAG_WRITABLE,
+	DATA = FLAG_DATA,
+	READ_ONLY = FLAG_READ_ONLY,
+	EXECUTABLE = FLAG_EXECUTABLE
+};
 
 struct SymbolTableEntry
 {
 	string name;					// symbol name
-	unsigned long sectionNumber;	// section identifier
+	SectionID sectionNumber;		// section identifier
 	unsigned long value;			// symbol value
 	unsigned long offset;			// offset from beginning of section
 	ScopeType scopeType;			// scope type
@@ -74,8 +94,6 @@ public:
 ///////////////////// SECTION TABLE /////////////////////
 /////////////////////////////////////////////////////////
 
-typedef unsigned long SectionID;
-
 struct SectionTableEntry
 {
 	string name;
@@ -83,9 +101,10 @@ struct SectionTableEntry
 	unsigned long length;
 	SectionID entryNo;
 	SymbolTableID symbolTableEntryNo = -1;
+	uint8_t flags;
 
-	SectionTableEntry(string name, unsigned long startAddress, unsigned long length, SectionID entryNo) :
-		name(name), startAddress(startAddress), length(length), entryNo(entryNo) {}
+	SectionTableEntry(string name, unsigned long startAddress, unsigned long length, SectionID entryNo, uint8_t flags) :
+		name(name), startAddress(startAddress), length(length), entryNo(entryNo), flags(flags) {}
 };
 
 class SectionTable
@@ -94,11 +113,51 @@ private:
 	map<SectionID, SectionTableEntry> table;
 	SectionID counter = 0;
 
+	uint8_t ConvertStringFlagsToByte(string flags);
+
 public:
-	SectionID InsertSection(string name, unsigned long startAddress, unsigned long length);
+	SectionID InsertSection(string name, unsigned long startAddress, unsigned long length, string flags);
 	SectionTableEntry* GetEntryByID(SectionID id);
 
+	bool HasPermission(SectionID id, SectionPermissions permission);
+
 	stringstream GenerateTextualSectionTable();
+
+	static string DefaultFlags(SectionType type);
+};
+
+////////////////////////////////////////////////////////////
+///////////////////// RELOCATION TABLE /////////////////////
+////////////////////////////////////////////////////////////
+
+enum RelocationType
+{
+	R_386_8 = 0,
+	R_386_16,
+	R_386_PC16
+};
+
+struct RelocationTableEntry
+{
+	SectionID sectionNo;
+	SymbolTableID symbolNo;
+	unsigned long offset;
+	RelocationType relocationType;
+
+	RelocationTableEntry(SectionID sectionNo, SymbolTableID symbolNo, unsigned long offset, RelocationType relocationType) :
+		sectionNo(sectionNo), symbolNo(symbolNo), offset(offset), relocationType(relocationType) {}
+};
+
+class RelocationTable
+{
+private:
+	vector<RelocationTableEntry> table;
+	SectionID counter = 0;
+
+public:
+	void InsertRelocation(SectionID sectionNo, SymbolTableID symbolNo, unsigned long offset, RelocationType relocationType);
+	
+	stringstream GenerateTextualRelocationTable();
 };
 
 #endif

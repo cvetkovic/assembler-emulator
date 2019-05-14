@@ -38,6 +38,9 @@
     <None Include="examples\example1.asm" />
     <None Include="examples\example3.asm" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="examples\legend.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{88902432-E139-4FCA-A611-3BA6E6FBB46E}</ProjectGuid>
@@ -107,6 +110,9 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

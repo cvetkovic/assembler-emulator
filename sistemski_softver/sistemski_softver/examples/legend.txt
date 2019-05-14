@@ -1,0 +1,10 @@
+example1 => test direktiva .byte, .word, .align, .skip, .end
+example2 => test ogranicenja:
+				- .text moze sve
+				- .data nema instrukcija
+				- .bss samo .skip direktiva
+			test globalnog simbola pre i posle definije istog
+			test eksternog simbola
+			test definicije vise globalnih i eksternih simbola jednom direktivom
+			test generisanja flegova
+			test dozvole smestanja direktiva/instrukcije u pojedine sekcije samo ako ima dozvolu

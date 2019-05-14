@@ -15,8 +15,6 @@
 #define PUBLIC_MODIFIER ".global"
 #define EXTERN_MODIFIER ".extern"
 
-#define ASM_UNDEFINED -1
-
 #include "exceptions.h"
 #include "instruction.h"
 #include "structures.h"
@@ -49,6 +47,7 @@ private:
 	
 	SymbolTable symbolTable;
 	SectionTable sectionTable;
+	RelocationTable relocationTable;
 	/* NOTE: in case that we want assembler without linker it is possible that all section
 			 be one behind another, so to implement that it the locationCounter shouldn't be 
 			 set to zero once section switch directive is encountered, but should just keep 

@@ -13,25 +13,26 @@ struct InstructionDetails
 {
 	uint8_t numberOfOperands;
 	uint8_t opCode;
+	bool jumpInstruction;
 
-	InstructionDetails(uint8_t numberOfOperands, uint8_t opCode) :
-		numberOfOperands(numberOfOperands), opCode(opCode) {}
+	InstructionDetails(uint8_t numberOfOperands, uint8_t opCode, bool jumpInstruction = false) :
+		numberOfOperands(numberOfOperands), opCode(opCode), jumpInstruction(jumpInstruction) {}
 };
 
 static map<string, InstructionDetails> instructionOperandMap = {
 		{"halt", InstructionDetails(0, 1)},
-		{"ret", InstructionDetails(0, 24)},
-		{"iret", InstructionDetails(0, 25)},
+		{"ret", InstructionDetails(0, 24, true)},
+		{"iret", InstructionDetails(0, 25, true)},
 
-		{"int", InstructionDetails(1, 3)},
+		{"int", InstructionDetails(1, 3, true)},
 		{"not", InstructionDetails(1, 10)},
 		{"push", InstructionDetails(1, 17)},
 		{"pop", InstructionDetails(1, 18)},
-		{"jmp", InstructionDetails(1, 19)},
-		{"jeq", InstructionDetails(1, 20)},
-		{"jne", InstructionDetails(1, 21)},
-		{"jgt", InstructionDetails(1, 22)},
-		{"call", InstructionDetails(1, 23)},
+		{"jmp", InstructionDetails(1, 19, true)},
+		{"jeq", InstructionDetails(1, 20, true)},
+		{"jne", InstructionDetails(1, 21, true)},
+		{"jgt", InstructionDetails(1, 22, true)},
+		{"call", InstructionDetails(1, 23, true)},
 
 		{"xchg", InstructionDetails(2, 2)},
 		{"mov", InstructionDetails(2, 4)},
@@ -60,11 +61,12 @@ private:
 		WORD = 1
 	};
 
+	unsigned long GenerateRelocation(string instructionMnemonic, const SymbolTableEntry& entry, unsigned long locationCounter, unsigned long writeToPosition, int instructionSize, SectionID currentSection, SymbolTable& symbolTable, RelocationTable& relocationTable);
+
 public:
-	Instruction(const Token& instruction, queue<Token>& params, unsigned long lineNumber, SymbolTable& symbolTable, bool firstPass = false);
+	Instruction(const Token& instruction, queue<Token> params, unsigned long lineNumber, unsigned long locationCounter, SectionID currentSection, SymbolTable& symbolTable, RelocationTable& relocationTable);
 
-	unsigned GetInstructionSize() { return instructionSize; }
-
+	static int GetInstructionSize(const Token& instruction, queue<Token> params, unsigned long lineNumber);
 	friend class Assembler;
 };
 
