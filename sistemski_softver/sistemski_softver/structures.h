@@ -36,9 +36,7 @@ enum SectionType
 	ST_USER_SECTION
 };
 
-SectionType IntToSectionType(int t = 1);
 SectionType StringToSectionType(string t);
-string SectionToString(SectionType t);
 
 enum TokenType : int;
 

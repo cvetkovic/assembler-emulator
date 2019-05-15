@@ -6,17 +6,17 @@ cb 12 00 22 00
 24 20 a0 10 00 24 22 a0 11 00 2c 20 22 c4 
 
 <!-- symbol table -->
-Name           SectionNumber  Value          Offset         ScopeType      TokenType      Size           EntryNumber    
-.data          0              N/A            N/A            1              2              N/A            0              
-broj_a         0              N/A            16             1              1              N/A            1              
-broj_b         0              N/A            17             1              1              N/A            2              
-.text          1              N/A            N/A            1              2              N/A            3              
-saberi         1              N/A            0              0              1              N/A            4              
+Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
+.data          0              N/A            N/A            1              2              0              
+broj_a         0              N/A            16             1              1              1              
+broj_b         0              N/A            17             1              1              2              
+.text          1              N/A            N/A            1              2              3              
+saberi         1              N/A            0              0              1              4              
 
 <!-- section table -->
-Name           StartAddress   Length         EntryNumber    SymbolTableEntryNumber
-.data          0              21             0              0              
-.text          0              14             1              3              
+Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
+.data          21             00001001       0              0              
+.text          14             00001001       1              3              
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 

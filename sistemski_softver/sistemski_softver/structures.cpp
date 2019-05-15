@@ -79,23 +79,6 @@ stringstream SymbolTable::GenerateTextualSymbolTable()
 ////////////////////// SECTION TABLE //////////////////////
 ///////////////////////////////////////////////////////////
 
-SectionType IntToSectionType(int t)
-{
-	switch (t)
-	{
-	case 0:
-		return SectionType::ST_START;
-	case 1:
-		return SectionType::ST_TEXT;
-	case 2:
-		return SectionType::ST_DATA;
-	case 3:
-		return SectionType::ST_BSS;
-	default:
-		return SectionType::ST_USER_SECTION;
-	}
-}
-
 SectionType StringToSectionType(string t = "text")
 {
 	if (t == ".start")
@@ -108,23 +91,6 @@ SectionType StringToSectionType(string t = "text")
 		return SectionType::ST_BSS;
 	else
 		return SectionType::ST_USER_SECTION;
-}
-
-string SectionToString(SectionType t)
-{
-	switch (t)
-	{
-	case SectionType::ST_START:
-		return ".start";
-	case SectionType::ST_TEXT:
-		return ".text";
-	case SectionType::ST_DATA:
-		return ".data";
-	case SectionType::ST_BSS:
-		return ".bss";
-	default:
-		return "user_section";
-	}
 }
 
 string SectionTable::DefaultFlags(SectionType type)

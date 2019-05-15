@@ -139,8 +139,7 @@ void Assembler::FirstPass()
 	unsigned long lineNumber = 0;
 
 	unsigned long locationCounter = 0;
-	SectionType currentSectionType = SectionType::ST_START;
-	SectionID currentSectionNo = -1;
+	SectionID currentSectionNo = START_SECTION;
 
 	// get each line
 	for (const vector<string>& line : assemblyCode)
@@ -167,7 +166,7 @@ void Assembler::FirstPass()
 		{
 			labelName = currentToken.GetValue();
 
-			if (currentSectionType == SectionType::ST_START)
+			if (currentSectionNo == START_SECTION)
 				throw AssemblerException("Label '" + labelName + "' cannot be defined at the start of a file without prior specificating a section.", ErrorCodes::SYNTAX_NO_INITIAL_SECTION, lineNumber);
 
 			symbolTable.InsertSymbol(labelName,
@@ -195,7 +194,7 @@ void Assembler::FirstPass()
 		}
 		case TokenType::DIRECTIVE:
 		{
-			if (currentSectionType == SectionType::ST_START)
+			if (currentSectionNo == START_SECTION)
 				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside of any section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
@@ -304,7 +303,7 @@ void Assembler::FirstPass()
 		case TokenType::SECTION:
 		{
 			// update existing current section size
-			if (currentSectionType != SectionType::ST_START)
+			if (currentSectionNo != START_SECTION)
 				sectionTable.GetEntryByID(currentSectionNo)->length = locationCounter;
 
 			string flags = SectionTable::DefaultFlags(StringToSectionType(currentToken.GetValue()));
@@ -322,7 +321,6 @@ void Assembler::FirstPass()
 					flags = t.GetValue();
 				}
 
-				currentSectionType = StringToSectionType(currentToken.GetValue());
 				currentSectionNo = sectionTable.InsertSection(currentToken.GetValue(), 0, flags);
 
 				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(currentToken.GetValue(),
@@ -342,7 +340,6 @@ void Assembler::FirstPass()
 				if (userDefinedSection.GetTokenType() != TokenType::SECTION && userDefinedSection.GetTokenType() != TokenType::SYMBOL)
 					throw new AssemblerException("After '.section' directive section name is required.", ErrorCodes::SYNTAX_UNKNOWN_TOKEN, lineNumber);
 				
-				currentSectionType = StringToSectionType(userDefinedSection.GetValue());
 				currentSectionNo = sectionTable.InsertSection(userDefinedSection.GetValue(), 0, flags);
 
 				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(userDefinedSection.GetValue(),
@@ -407,7 +404,7 @@ void Assembler::FirstPass()
 		case TokenType::END_OF_FILE:
 		{
 			// update length of the last section
-			if (currentSectionType != SectionType::ST_START)
+			if (currentSectionNo != START_SECTION)
 				sectionTable.GetEntryByID(currentSectionNo)->length = locationCounter;
 
 			break;
@@ -423,8 +420,8 @@ void Assembler::SecondPass()
 	unsigned long lineNumber = 0;
 
 	unsigned long locationCounter = 0;
-	SectionType currentSectionType = SectionType::ST_START;
-	SectionID currentSectionNo = -1;
+	//SectionType currentSectionType = SectionType::ST_START;
+	SectionID currentSectionNo = START_SECTION;
 
 	for (vector<string> line : assemblyCode)
 	{
@@ -595,7 +592,6 @@ void Assembler::SecondPass()
 			}
 
 			currentSectionNo++;
-			currentSectionType = StringToSectionType(sectionTable.GetEntryByID(currentSectionNo)->name);
 
 			WriteToOutput("<!-- section '");
 			WriteToOutput(sectionTable.GetEntryByID(currentSectionNo)->name);
