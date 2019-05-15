@@ -132,13 +132,13 @@ uint8_t SectionTable::ConvertStringFlagsToByte(string flags)
 	return _flags;
 }
 
-SectionID SectionTable::InsertSection(string name, unsigned long length, string flags)
+SectionID SectionTable::InsertSection(string name, unsigned long length, string flags, unsigned long lineNumber)
 {
 	map<SectionID, SectionTableEntry>::iterator it;
 
 	for (it = table.begin(); it != table.end(); it++)
 		if (it->second.name == name)
-			throw AssemblerException("Sections with the same name ('" + name + "') have been detected.", ErrorCodes::SECTION_ALREADY_DEFINED);
+			throw AssemblerException("Sections with the same name ('" + name + "') have been detected.", ErrorCodes::SECTION_ALREADY_DEFINED, lineNumber);
 
 	uint8_t _flags = ConvertStringFlagsToByte(flags);
 
@@ -146,7 +146,7 @@ SectionID SectionTable::InsertSection(string name, unsigned long length, string 
 		((_flags & FLAG_DATA) && ((_flags & FLAG_BSS) || (_flags & FLAG_EXECUTABLE))) ||
 		((_flags & FLAG_EXECUTABLE) && ((_flags & FLAG_DATA) || (_flags & FLAG_BSS))) ||
 		((_flags & FLAG_READ_ONLY) && (_flags & FLAG_WRITABLE)))
-		throw AssemblerException("Invalid combination of flags while defining section.", ErrorCodes::INVALID_FLAGS);
+		throw AssemblerException("Invalid combination of flags while defining section.", ErrorCodes::INVALID_FLAGS, lineNumber);
 
 	SectionTableEntry entry(name, length, counter, _flags);
 	table.insert({ counter, entry });

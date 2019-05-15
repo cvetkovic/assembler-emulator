@@ -7,7 +7,8 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 
 	OperandSize operandSize = OperandSize::WORD;
 	string instructionMnemonic = instruction.GetValue();
-	if (instructionMnemonic[instructionMnemonic.size() - 1] == 'b')
+	// second condition because mnemonic can end with 'b' (e.g. sub)
+	if ((instructionMnemonic[instructionMnemonic.size() - 1] == 'b') && (instructionOperandMap.find(instructionMnemonic) == instructionOperandMap.end()))
 	{
 		operandSize = OperandSize::BYTE;
 		instructionMnemonic = instructionMnemonic.substr(0, instructionMnemonic.size() - 1);
@@ -122,6 +123,9 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 			}
 			else
 			{
+				if (valueToWrite > 0xFFFF)
+					cout << "Warning at line " << lineNumber << ": instruction is specified to work with word operand(s), but provided operand is bigger than 0xFFFF. Least significant sixteen bits will be used." << endl;
+
 				operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
 				operationCode[writeToPosition++] = (uint8_t)((valueToWrite >> 8) & 0xFF);
 
@@ -148,14 +152,14 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 				throw AssemblerException("Invalid syntax offset of register indirect addressing mode.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 			// operator encoding
-			char registerNumber = operand.GetValue().at(1);
-			int c = registerNumber - '0';
+			string registerNumber = operand.GetValue().substr(1, operand.GetValue().find('[') - 1);;
+			int c = stoi(registerNumber);
 
-			if (c >= 8 || c < 0)
-				throw AssemblerException("Specified register is not supported by the underlying processor architecture.", ErrorCodes::INVALID_OPERAND, lineNumber);
-			else if (c == 15)
+			if (c == 15)
 				throw AssemblerException("Not allowed to use register indirect mode with PSW as base register.", ErrorCodes::INVALID_OPERAND, lineNumber);
-
+			else if (c >= 8 || c < 0)
+				throw AssemblerException("Specified register is not supported by the underlying processor architecture.", ErrorCodes::INVALID_OPERAND, lineNumber);
+			
 			long valueToWrite = -1;	// 16-bit long field
 			if (offset.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 				valueToWrite = (unsigned long)strtol(offset.GetValue().c_str(), 0, 16);
@@ -163,7 +167,7 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 			{
 				if (symbolTable.GetEntryByName(offset.GetValue()))
 				{
-					const SymbolTableEntry& entry = *symbolTable.GetEntryByName(operand.GetValue());
+					const SymbolTableEntry& entry = *symbolTable.GetEntryByName(offset.GetValue());
 					valueToWrite = GenerateRelocation(instructionMnemonic,
 						entry,
 						locationCounter,
@@ -185,7 +189,7 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 				operationCode[writeToPosition++] = (2 << 5) | (c << 1);
 				instructionSize++;
 			}
-			else if (valueToWrite >= -128 && valueToWrite <= 127 && offset.GetTokenType() != TokenType::SYMBOL)
+			else if ((unsigned long)valueToWrite <= 0xFF && offset.GetTokenType() != TokenType::SYMBOL)
 			{
 				operationCode[writeToPosition++] = (3 << 5) | (c << 1);
 				instructionSize++;
@@ -195,7 +199,10 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 			}
 			else
 			{
-				operationCode[writeToPosition++] = (3 << 5) | (c << 1);
+				if (valueToWrite > 0xFFFF)
+					cout << "Warning at line " << lineNumber << ": instruction is specified to work with word operand(s), but provided operand is bigger than 0xFFFF. Least significant sixteen bits will be used." << endl;
+
+				operationCode[writeToPosition++] = (4 << 5) | (c << 1);
 				instructionSize++;
 
 				operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
@@ -343,7 +350,8 @@ int Instruction::GetInstructionSize(const Token& instruction, queue<Token> param
 
 	OperandSize operandSize = OperandSize::WORD;
 	string instructionMnemonic = instruction.GetValue();
-	if (instructionMnemonic[instructionMnemonic.size() - 1] == 'b')
+	// second condition because mnemonic can end with 'b' (e.g. sub)
+	if ((instructionMnemonic[instructionMnemonic.size() - 1] == 'b') && (instructionOperandMap.find(instructionMnemonic) == instructionOperandMap.end()))
 	{
 		operandSize = OperandSize::BYTE;
 		instructionMnemonic = instructionMnemonic.substr(0, instructionMnemonic.size() - 1);
@@ -410,7 +418,7 @@ int Instruction::GetInstructionSize(const Token& instruction, queue<Token> param
 			{
 				result++;		// OpDescr
 			}
-			else if (valueToWrite >= -128 && valueToWrite <= 127 && offset.GetTokenType() != TokenType::SYMBOL)
+			else if ((unsigned long)valueToWrite <= 0xFF && offset.GetTokenType() != TokenType::SYMBOL)
 			{
 				result++;		// OpDescr
 				result += 1;	// Im/Di/Ad

@@ -18,6 +18,9 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 	data = regex_replace(data, regex("^sp"), "r6");
 	data = regex_replace(data, regex("^pc"), "r7");
 	data = regex_replace(data, regex("^psw"), "r15");
+	data = regex_replace(data, regex("^\\[sp\\]$"), "r6[0]");
+	data = regex_replace(data, regex("^\\[pc\\]$"), "r7[0]");
+	data = regex_replace(data, regex("^\\[psw\\]$"), "r15[0]");
 
 	bool memoryDirect = false;
 	bool immediatelySymbol = false;
@@ -120,7 +123,7 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 			else if (&p == &staticAssemblyParsers[11])
 			{
 				r1 = TokenType::FLAGS;
-				r2 = data.substr(1, data.size() - 2);
+				r2 = data;
 			}
 
 			return Token(r1, r2);

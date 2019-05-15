@@ -8,7 +8,7 @@
 00 00 00 00 00 00 00 00 00 00 
 
 <!-- section 'text' -->
-07 
+24 20 22 07 
 
 <!-- section 'tekst' -->
 08 
@@ -33,7 +33,7 @@ Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumb
 .data          1              00001100       0              0              
 .text          6              00000011       1              5              
 .bss           10             00100000       2              8              
-text           1              00001001       3              10             
+text           4              00010011       3              10             
 tekst          1              00001001       4              11             
 
 <!-- relocation table -->

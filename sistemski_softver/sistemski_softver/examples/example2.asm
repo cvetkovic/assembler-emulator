@@ -12,7 +12,8 @@ add r2, r1
 
 tekkt: .skip 10
 
-.section text, "xr"
+.section text, "xrn"
+mov r0, r1
 .byte 7
 
 .global tekkt		# global after definition

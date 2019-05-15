@@ -1,0 +1,22 @@
+<!-- section '.text' -->
+0c 14 20 22 1c 20 24 20 22 2c 20 22 34 20 22 3c
+20 22 44 20 22 4c 20 22 54 20 5c 20 22 64 20 22
+6c 20 22 74 20 22 7c 20 22 84 20 22 8c 20 94 20
+9c 20 a4 20 ac 20 b4 20 bc 20 c4 cc 14 20 22 24
+20 22 2c 20 22 34 20 22 3c 20 22 44 20 22 4c 20
+22 54 20 5c 20 22 64 20 22 6c 20 22 74 20 22 7c
+20 22 84 20 22 8c 20 94 20 10 20 23 20 20 23 28
+20 23 30 20 23 38 20 23 40 20 23 48 20 23 50 20
+58 20 23 60 20 23 68 20 23 70 20 23 78 20 23 80
+20 23 88 20 90 20 
+
+<!-- symbol table -->
+Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
+.text          0              N/A            N/A            1              2              0              
+
+<!-- section table -->
+Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
+.text          150            00000011       0              0              
+
+<!-- relocation table -->
+SectionNo      SymbolNo       Offset         RelocationType 

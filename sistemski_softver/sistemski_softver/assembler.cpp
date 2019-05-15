@@ -110,6 +110,10 @@ inline void Assembler::WriteToOutput(const Instruction& instruction)
 	{
 		output_file << instruction.operationCode[i];
 
+		// START DEBUG
+		// txt_output_file << bitset<8>(instruction.operationCode[i]) << endl;
+		// END DEBUG
+
 		txt_output_file << hex << ((instruction.operationCode[i] >> 4) & 0xF);
 		txt_output_file << hex << (instruction.operationCode[i] & 0xF);
 		if (++currentBytesInline == BYTES_INLINE)
@@ -120,6 +124,10 @@ inline void Assembler::WriteToOutput(const Instruction& instruction)
 		else
 			txt_output_file << " ";
 	}
+
+	// START DEBUG
+	// txt_output_file << endl << endl;
+	// END DEBUG
 }
 
 inline void Assembler::WriteToOutput(string text)
@@ -310,6 +318,25 @@ void Assembler::FirstPass()
 			
 			if (currentToken.GetValue() != "")	// GetValue() can return (.bss|.data|.text)
 			{
+				currentSectionNo = sectionTable.InsertSection(currentToken.GetValue(), 0, flags, lineNumber);
+
+				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(currentToken.GetValue(),
+					currentSectionNo,
+					ASM_UNDEFINED,
+					ASM_UNDEFINED,
+					ScopeType::LOCAL,
+					TokenType::SECTION);
+
+				sectionTable.GetEntryByID(currentSectionNo)->symbolTableEntryNo = symbolTableNo;
+
+				if (!currentLineTokens.empty())
+					cout << "Warning: flags in definition of section '" << currentToken.GetValue() << "' have been ignored. To include them use '.section' directive." << endl;
+			}				
+			else
+			{
+				Token userDefinedSection = Token::ParseToken(currentLineTokens.front(), lineNumber);
+				currentLineTokens.pop();
+
 				if (!currentLineTokens.empty())
 				{
 					Token t = Token::ParseToken(currentLineTokens.front(), lineNumber);
@@ -321,26 +348,10 @@ void Assembler::FirstPass()
 					flags = t.GetValue();
 				}
 
-				currentSectionNo = sectionTable.InsertSection(currentToken.GetValue(), 0, flags);
-
-				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(currentToken.GetValue(),
-					currentSectionNo,
-					ASM_UNDEFINED,
-					ASM_UNDEFINED,
-					ScopeType::LOCAL,
-					TokenType::SECTION);
-
-				sectionTable.GetEntryByID(currentSectionNo)->symbolTableEntryNo = symbolTableNo;
-			}				
-			else
-			{
-				Token userDefinedSection = Token::ParseToken(currentLineTokens.front(), lineNumber);
-				currentLineTokens.pop();
-
 				if (userDefinedSection.GetTokenType() != TokenType::SECTION && userDefinedSection.GetTokenType() != TokenType::SYMBOL)
 					throw new AssemblerException("After '.section' directive section name is required.", ErrorCodes::SYNTAX_UNKNOWN_TOKEN, lineNumber);
 				
-				currentSectionNo = sectionTable.InsertSection(userDefinedSection.GetValue(), 0, flags);
+				currentSectionNo = sectionTable.InsertSection(userDefinedSection.GetValue(), 0, flags, lineNumber);
 
 				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(userDefinedSection.GetValue(),
 					currentSectionNo,

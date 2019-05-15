@@ -37,6 +37,9 @@
     <None Include="examples\example2.asm" />
     <None Include="examples\example1.asm" />
     <None Include="examples\example3.asm" />
+    <None Include="examples\example4.asm" />
+    <None Include="examples\example5.asm" />
+    <None Include="examples\example6.asm" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\legend.txt" />

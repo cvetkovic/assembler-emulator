@@ -7,4 +7,6 @@ example2 => test ogranicenja:
 			test eksternog simbola
 			test definicije vise globalnih i eksternih simbola jednom direktivom
 			test generisanja flegova
-			test dozvole smestanja direktiva/instrukcije u pojedine sekcije samo ako ima dozvolu
+example3 => test dozvole smestanja direktiva/instrukcije u pojedine sekcije samo ako ima dozvolu
+example4 => test instrucionih mnemonika i operacionih kodova istih
+example5 => test adresiranja

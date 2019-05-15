@@ -113,7 +113,7 @@ private:
 	uint8_t ConvertStringFlagsToByte(string flags);
 
 public:
-	SectionID InsertSection(string name, unsigned long length, string flags);
+	SectionID InsertSection(string name, unsigned long length, string flags, unsigned long lineNumber);
 	SectionTableEntry* GetEntryByID(SectionID id);
 
 	bool HasFlag(SectionID id, SectionPermissions permission);

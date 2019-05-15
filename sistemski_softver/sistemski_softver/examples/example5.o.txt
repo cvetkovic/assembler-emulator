@@ -1,0 +1,39 @@
+<!-- section '.data' -->
+00 00 00 00 00 00 00 00 00 00 45 00 00 
+
+<!-- section '.text' -->
+24 2e 00 19 00 24 20 00 0a 00 20 2f 00 19 20 20
+00 0a 24 2e 00 ab 00 24 2e 00 cd ab 24 2e 00 ef
+cd 24 20 22 20 21 22 24 2e 2c 24 4c 20 24 4e 20
+24 6a 08 20 24 6a cd 20 24 8a cd ab 20 24 8a 56
+34 20 24 4a 20 24 8a 0a 00 20 24 20 8a 0a 00 20
+20 8c 0a 00 20 8c 0a 00 21 24 20 8e 0a 00 20 21
+8e 0a 00 24 a0 38 00 20 24 22 a0 cd ab 24 24 a0
+0b 00 24 a0 0c 00 26 20 24 a0 0b 00 20 a0 0c 00
+26 
+
+<!-- symbol table -->
+Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
+.data          0              N/A            N/A            1              2              0              
+simbol         0              N/A            10             1              1              1              
+simbol1        0              N/A            11             1              1              2              
+simbol2        0              N/A            12             1              1              3              
+.text          1              N/A            N/A            1              2              4              
+
+<!-- section table -->
+Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
+.data          13             00001100       0              0              
+.text          130            00000011       1              4              
+
+<!-- relocation table -->
+SectionNo      SymbolNo       Offset         RelocationType 
+1              1              8              1              
+1              1              17             1              
+1              1              71             1              
+1              1              77             1              
+1              1              82             1              
+1              1              86             1              
+1              2              113            1              
+1              3              117            1              
+1              2              123            1              
+1              3              127            1              

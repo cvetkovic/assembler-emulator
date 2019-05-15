@@ -61,6 +61,15 @@
     <None Include="examples\example3.asm">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="examples\example4.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example5.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example6.asm">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\legend.txt">
