@@ -1,0 +1,15 @@
+<!-- section '.text' -->
+14 4c 00 34 12 
+
+<!-- symbol table -->
+Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
+.text          0              N/A            N/A            1              2              0              
+labela1        0              N/A            0              1              1              1              
+labela2        0              N/A            5              1              1              2              
+
+<!-- section table -->
+Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
+.text          5              00000011       0              0              
+
+<!-- relocation table -->
+SectionNo      SymbolNo       Offset         RelocationType 

@@ -10,3 +10,6 @@ example2 => test ogranicenja:
 example3 => test dozvole smestanja direktiva/instrukcije u pojedine sekcije samo ako ima dozvolu
 example4 => test instrucionih mnemonika i operacionih kodova istih
 example5 => test adresiranja
+example6 => test xchg [sp], 0x1234
+			test labela radi dobijanja adrese
+example7 => test apsolutne i relativne relokacije

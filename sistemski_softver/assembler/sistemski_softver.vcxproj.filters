@@ -70,6 +70,30 @@
     <None Include="examples\example6.asm">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="examples\example7.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example8.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example9.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example10.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example11.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example12.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example13.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example14.asm">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\legend.txt">

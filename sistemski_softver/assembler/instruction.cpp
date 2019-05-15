@@ -303,18 +303,18 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 	if (it->second.jumpInstruction)
 		pcRelocation = true;
 
-	unsigned long result = 0;
+	long result = 0;
 
 	if (pcRelocation)	// R_386_PC16
 	{
 		if (entry.scopeType == ScopeType::EXTERN)
-			result = instructionSize;
+			result = -2; // -2 on 16-bit machine, because of data field length to next instruction
 		else	// GLOBAL or LOCAL are both defined in the current file
 		{
 			if (currentSection == entry.sectionNumber)
-				return entry.offset - locationCounter + instructionSize;
+				result = entry.offset - locationCounter - 2; // return without relocating wrong
 			else
-				result = entry.offset - instructionSize;
+				result = entry.offset - 2;
 		}
 
 		relocationTable.InsertRelocation(currentSection,
@@ -327,7 +327,7 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 		// extern fields relocations are set at link time to absolute address
 		// by just adding the starting address to 0 offset
 		if (entry.scopeType == ScopeType::EXTERN)
-			result = 0;
+			result = instructionSize;
 		// fields in no matter what section in the current file should be set to
 		// their offset and at link time just added with absolute address of their
 		// respected section
