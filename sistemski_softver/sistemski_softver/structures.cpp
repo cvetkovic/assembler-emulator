@@ -1,6 +1,6 @@
 #include "structures.h"
 
-SymbolTableID SymbolTable::InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType, unsigned long size)
+SymbolTableID SymbolTable::InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType)
 {
 	map<SymbolTableID, SymbolTableEntry>::iterator it;
 
@@ -8,7 +8,7 @@ SymbolTableID SymbolTable::InsertSymbol(string name, unsigned long sectionNumber
 		if (it->second.name == name)
 			throw AssemblerException("Symbol '" + name + "' already exists duplicated.", ErrorCodes::SYMBOL_EXISTS);	
 
-	SymbolTableEntry entry(name, sectionNumber, value, locationCounter, scopeType, tokenType, counter, size);
+	SymbolTableEntry entry(name, sectionNumber, value, locationCounter, scopeType, tokenType, counter);
 
 	table.insert({ counter, entry });
 
@@ -45,7 +45,6 @@ stringstream SymbolTable::GenerateTextualSymbolTable()
 	output << setw(15) << "Offset";
 	output << setw(15) << "ScopeType";
 	output << setw(15) << "TokenType";
-	output << setw(15) << "Size";
 	output << setw(15) << "EntryNumber";
 	output << endl;
 
@@ -69,10 +68,6 @@ stringstream SymbolTable::GenerateTextualSymbolTable()
 			output << setw(15) << "N/A";
 		output << setw(15) << it->second.scopeType;
 		output << setw(15) << it->second.tokenType;
-		if (it->second.size != ASM_UNDEFINED)
-			output << setw(15) << it->second.size;
-		else
-			output << setw(15) << "N/A";
 		output << setw(15) << it->second.entryNo;
 		output << endl;
 	}
@@ -89,43 +84,43 @@ SectionType IntToSectionType(int t)
 	switch (t)
 	{
 	case 0:
-		return SectionType::START;
+		return SectionType::ST_START;
 	case 1:
-		return SectionType::TEXT;
+		return SectionType::ST_TEXT;
 	case 2:
-		return SectionType::DATA;
+		return SectionType::ST_DATA;
 	case 3:
-		return SectionType::BSS;
+		return SectionType::ST_BSS;
 	default:
-		return SectionType::USER_SECTION;
+		return SectionType::ST_USER_SECTION;
 	}
 }
 
 SectionType StringToSectionType(string t = "text")
 {
 	if (t == ".start")
-		return SectionType::START;
+		return SectionType::ST_START;
 	else if (t == ".text")
-		return SectionType::TEXT;
+		return SectionType::ST_TEXT;
 	else if (t == ".data")
-		return SectionType::DATA;
+		return SectionType::ST_DATA;
 	else if (t == ".bss")
-		return SectionType::BSS;
+		return SectionType::ST_BSS;
 	else
-		return SectionType::USER_SECTION;
+		return SectionType::ST_USER_SECTION;
 }
 
 string SectionToString(SectionType t)
 {
 	switch (t)
 	{
-	case SectionType::START:
+	case SectionType::ST_START:
 		return ".start";
-	case SectionType::TEXT:
+	case SectionType::ST_TEXT:
 		return ".text";
-	case SectionType::DATA:
+	case SectionType::ST_DATA:
 		return ".data";
-	case SectionType::BSS:
+	case SectionType::ST_BSS:
 		return ".bss";
 	default:
 		return "user_section";
@@ -134,13 +129,13 @@ string SectionToString(SectionType t)
 
 string SectionTable::DefaultFlags(SectionType type)
 {
-	if (type == SectionType::BSS)
+	if (type == SectionType::ST_BSS)
 		return "b";
-	else if (type == SectionType::DATA)
+	else if (type == SectionType::ST_DATA)
 		return "wd";
-	else if (type == SectionType::TEXT)
+	else if (type == SectionType::ST_TEXT)
 		return "xr";
-	else if (type == SectionType::USER_SECTION)
+	else if (type == SectionType::ST_USER_SECTION)
 		return "wx";
 	else
 		return "";
@@ -171,7 +166,7 @@ uint8_t SectionTable::ConvertStringFlagsToByte(string flags)
 	return _flags;
 }
 
-SectionID SectionTable::InsertSection(string name, unsigned long startAddress, unsigned long length, string flags)
+SectionID SectionTable::InsertSection(string name, unsigned long length, string flags)
 {
 	map<SectionID, SectionTableEntry>::iterator it;
 
@@ -181,7 +176,13 @@ SectionID SectionTable::InsertSection(string name, unsigned long startAddress, u
 
 	uint8_t _flags = ConvertStringFlagsToByte(flags);
 
-	SectionTableEntry entry(name, startAddress, length, counter, _flags);
+	if (((_flags & FLAG_BSS) && ((_flags & FLAG_DATA) || (_flags & FLAG_EXECUTABLE))) ||
+		((_flags & FLAG_DATA) && ((_flags & FLAG_BSS) || (_flags & FLAG_EXECUTABLE))) ||
+		((_flags & FLAG_EXECUTABLE) && ((_flags & FLAG_DATA) || (_flags & FLAG_BSS))) ||
+		((_flags & FLAG_READ_ONLY) && (_flags & FLAG_WRITABLE)))
+		throw AssemblerException("Invalid combination of flags while defining section.", ErrorCodes::INVALID_FLAGS);
+
+	SectionTableEntry entry(name, length, counter, _flags);
 	table.insert({ counter, entry });
 
 	return counter++;;
@@ -192,7 +193,7 @@ SectionTableEntry* SectionTable::GetEntryByID(SectionID id)
 	return &table.at(id);
 }
 
-bool SectionTable::HasPermission(SectionID id, SectionPermissions permission)
+bool SectionTable::HasFlag(SectionID id, SectionPermissions permission)
 {
 	if (table.find(id) != table.end())
 	{
@@ -210,7 +211,6 @@ stringstream SectionTable::GenerateTextualSectionTable()
 
 	output << left;
 	output << setw(15) << "Name";
-	output << setw(15) << "StartAddress";
 	output << setw(15) << "Length";
 	output << setw(15) << "__bnwdrx";
 	output << setw(15) << "EntryNumber";
@@ -223,7 +223,6 @@ stringstream SectionTable::GenerateTextualSectionTable()
 	{
 		output << left;
 		output << setw(15) << it->second.name;
-		output << setw(15) << it->second.startAddress;
 		output << setw(15) << it->second.length;
 		output << setw(15) << bitset<8>(it->second.flags);
 		output << setw(15) << it->second.entryNo;

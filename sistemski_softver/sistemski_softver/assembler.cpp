@@ -139,7 +139,7 @@ void Assembler::FirstPass()
 	unsigned long lineNumber = 0;
 
 	unsigned long locationCounter = 0;
-	SectionType currentSectionType = SectionType::START;
+	SectionType currentSectionType = SectionType::ST_START;
 	SectionID currentSectionNo = -1;
 
 	// get each line
@@ -167,7 +167,7 @@ void Assembler::FirstPass()
 		{
 			labelName = currentToken.GetValue();
 
-			if (currentSectionType == SectionType::START)
+			if (currentSectionType == SectionType::ST_START)
 				throw AssemblerException("Label '" + labelName + "' cannot be defined at the start of a file without prior specificating a section.", ErrorCodes::SYNTAX_NO_INITIAL_SECTION, lineNumber);
 
 			symbolTable.InsertSymbol(labelName,
@@ -175,8 +175,7 @@ void Assembler::FirstPass()
 				ASM_UNDEFINED,
 				locationCounter,
 				ScopeType::LOCAL,
-				TokenType::LABEL,
-				ASM_UNDEFINED);
+				TokenType::LABEL);
 
 			if (currentLineTokens.empty())
 				continue;
@@ -196,7 +195,7 @@ void Assembler::FirstPass()
 		}
 		case TokenType::DIRECTIVE:
 		{
-			if (currentSectionType == SectionType::START)
+			if (currentSectionType == SectionType::ST_START)
 				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside of any section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
@@ -218,8 +217,8 @@ void Assembler::FirstPass()
 			}
 			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
 			{
-				if (currentSectionType == SectionType::BSS)
-					throw AssemblerException("Section '.bss' can contain only uninitialized data.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
+				if (sectionTable.HasFlag(currentSectionNo, SectionPermissions::BSS))
+					throw AssemblerException("Directive '.byte' cannot be put into secction with 'b' flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 				do
 				{
@@ -248,8 +247,8 @@ void Assembler::FirstPass()
 			}
 			else if (currentToken.GetValue() == WORD_DIRECTIVE)
 			{
-				if (currentSectionType == SectionType::BSS)
-					throw AssemblerException("Section '.bss' can contain only uninitialized data.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
+				if (sectionTable.HasFlag(currentSectionNo, SectionPermissions::BSS))
+					throw AssemblerException("Directive '.word' cannot be put into secction with 'b' flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 				do
 				{
@@ -269,8 +268,8 @@ void Assembler::FirstPass()
 				Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
 				currentLineTokens.pop();
 
-				if (currentSectionType != SectionType::DATA)
-					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined in current section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				if (!sectionTable.HasFlag(currentSectionNo, SectionPermissions::DATA))
+					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside a section with data flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 				// Token operand holds equivalence name
 				// Token equValue holds value to which label is equivalent
@@ -297,8 +296,7 @@ void Assembler::FirstPass()
 					value,
 					ASM_UNDEFINED,
 					ScopeType::LOCAL,
-					TokenType::DIRECTIVE,
-					ASM_UNDEFINED);
+					TokenType::DIRECTIVE);
 			}
 
 			break;
@@ -306,7 +304,7 @@ void Assembler::FirstPass()
 		case TokenType::SECTION:
 		{
 			// update existing current section size
-			if (currentSectionType != SectionType::START)
+			if (currentSectionType != SectionType::ST_START)
 				sectionTable.GetEntryByID(currentSectionNo)->length = locationCounter;
 
 			string flags = SectionTable::DefaultFlags(StringToSectionType(currentToken.GetValue()));
@@ -325,15 +323,14 @@ void Assembler::FirstPass()
 				}
 
 				currentSectionType = StringToSectionType(currentToken.GetValue());
-				currentSectionNo = sectionTable.InsertSection(currentToken.GetValue(), 0, 0, flags);
+				currentSectionNo = sectionTable.InsertSection(currentToken.GetValue(), 0, flags);
 
 				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(currentToken.GetValue(),
 					currentSectionNo,
 					ASM_UNDEFINED,
 					ASM_UNDEFINED,
 					ScopeType::LOCAL,
-					TokenType::SECTION,
-					ASM_UNDEFINED);
+					TokenType::SECTION);
 
 				sectionTable.GetEntryByID(currentSectionNo)->symbolTableEntryNo = symbolTableNo;
 			}				
@@ -346,15 +343,14 @@ void Assembler::FirstPass()
 					throw new AssemblerException("After '.section' directive section name is required.", ErrorCodes::SYNTAX_UNKNOWN_TOKEN, lineNumber);
 				
 				currentSectionType = StringToSectionType(userDefinedSection.GetValue());
-				currentSectionNo = sectionTable.InsertSection(userDefinedSection.GetValue(), 0, 0, flags);
+				currentSectionNo = sectionTable.InsertSection(userDefinedSection.GetValue(), 0, flags);
 
 				SymbolTableID symbolTableNo = symbolTable.InsertSymbol(userDefinedSection.GetValue(),
 					currentSectionNo,
 					ASM_UNDEFINED,
 					ASM_UNDEFINED,
 					ScopeType::LOCAL,
-					TokenType::SECTION,
-					ASM_UNDEFINED);
+					TokenType::SECTION);
 
 				sectionTable.GetEntryByID(currentSectionNo)->symbolTableEntryNo = symbolTableNo;
 			}
@@ -381,8 +377,7 @@ void Assembler::FirstPass()
 						ASM_UNDEFINED,
 						ASM_UNDEFINED,
 						ScopeType::EXTERN,
-						TokenType::LABEL,
-						ASM_UNDEFINED);
+						TokenType::LABEL);
 
 				} while (!currentLineTokens.empty());
 			}
@@ -391,8 +386,10 @@ void Assembler::FirstPass()
 		}
 		case TokenType::INSTRUCTION:
 		{
-			if (currentSectionType != SectionType::TEXT)
-				throw AssemblerException("Instructions cannot be put outside of '.text' section.", ErrorCodes::INVALID_INSTRUCTION_SECTION, lineNumber);
+			if (sectionTable.HasFlag(currentSectionNo, SectionPermissions::BSS))
+				throw AssemblerException("Instructions cannot be put into section with 'b' flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+			else if (!sectionTable.HasFlag(currentSectionNo, SectionPermissions::EXECUTABLE))
+				throw AssemblerException("Instructions cannot be put into section without 'x' flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
 			queue<Token> params;
 			while (!currentLineTokens.empty())
@@ -410,7 +407,7 @@ void Assembler::FirstPass()
 		case TokenType::END_OF_FILE:
 		{
 			// update length of the last section
-			if (currentSectionType != SectionType::START)
+			if (currentSectionType != SectionType::ST_START)
 				sectionTable.GetEntryByID(currentSectionNo)->length = locationCounter;
 
 			break;
@@ -426,7 +423,7 @@ void Assembler::SecondPass()
 	unsigned long lineNumber = 0;
 
 	unsigned long locationCounter = 0;
-	SectionType currentSectionType = SectionType::START;
+	SectionType currentSectionType = SectionType::ST_START;
 	SectionID currentSectionNo = -1;
 
 	for (vector<string> line : assemblyCode)
@@ -487,9 +484,6 @@ void Assembler::SecondPass()
 		}
 		case TokenType::DIRECTIVE:
 		{
-			if (currentSectionType == SectionType::START)
-				throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside of any section.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
-			
 			if (currentToken.GetValue() == ALIGN_DIRECTIVE)
 			{
 				Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
@@ -512,6 +506,9 @@ void Assembler::SecondPass()
 			}
 			else if (currentToken.GetValue() == BYTE_DIRECTIVE)
 			{
+				if (sectionTable.HasFlag(currentSectionNo, SectionPermissions::BSS))
+					throw AssemblerException("Directive '.byte' cannot be put into secction with 'b' flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+				
 				do
 				{
 					Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
@@ -534,8 +531,7 @@ void Assembler::SecondPass()
 
 					// skip 1 * val_byte byte
 					locationCounter += 1;
-				}
-				while (!currentLineTokens.empty());
+				} while (!currentLineTokens.empty());
 			}
 			else if (currentToken.GetValue() == SKIP_DIRECTIVE)
 			{
@@ -578,8 +574,7 @@ void Assembler::SecondPass()
 
 					// skip 2 * val_byte byte
 					locationCounter += 2;
-				}
-				while (!currentLineTokens.empty());
+				} while (!currentLineTokens.empty());
 			}
 			else if (currentToken.GetValue() == EQUIVALENCE_DIRECTIVE)
 			{

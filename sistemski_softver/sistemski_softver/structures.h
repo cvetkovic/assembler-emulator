@@ -26,13 +26,14 @@ enum ScopeType
 	EXTERN
 };
 
+// TODO: remove this because flags are sufficient to distinguish sections
 enum SectionType
 {
-	START = 0,
-	TEXT,
-	DATA,
-	BSS,
-	USER_SECTION
+	ST_START = 0,
+	ST_TEXT,
+	ST_DATA,
+	ST_BSS,
+	ST_USER_SECTION
 };
 
 SectionType IntToSectionType(int t = 1);
@@ -68,11 +69,10 @@ struct SymbolTableEntry
 	ScopeType scopeType;			// scope type
 	
 	TokenType tokenType;			// type of token
-	unsigned long size;				// symbol size
 	SymbolTableID entryNo;			// needed to link symbol with relocation table
 
-	SymbolTableEntry(string name, unsigned long sectionNumber, unsigned long value, unsigned long offset, ScopeType scopeType, TokenType tokenType, SymbolTableID entryNo, unsigned long size = 0) :
-		name(name), sectionNumber(sectionNumber), value(value), offset(offset), scopeType(scopeType), tokenType(tokenType), size(size), entryNo(entryNo) {}
+	SymbolTableEntry(string name, unsigned long sectionNumber, unsigned long value, unsigned long offset, ScopeType scopeType, TokenType tokenType, SymbolTableID entryNo) :
+		name(name), sectionNumber(sectionNumber), value(value), offset(offset), scopeType(scopeType), tokenType(tokenType), entryNo(entryNo) {}
 };
 
 class SymbolTable
@@ -83,7 +83,7 @@ private:
 	unsigned long counter = 0;
 
 public:
-	SymbolTableID InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType, unsigned long size);
+	SymbolTableID InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType);
 	SymbolTableEntry* GetEntryByID(SymbolTableID id);
 	SymbolTableEntry* GetEntryByName(string name);
 
@@ -97,14 +97,13 @@ public:
 struct SectionTableEntry
 {
 	string name;
-	unsigned long startAddress;
 	unsigned long length;
 	SectionID entryNo;
 	SymbolTableID symbolTableEntryNo = -1;
 	uint8_t flags;
 
-	SectionTableEntry(string name, unsigned long startAddress, unsigned long length, SectionID entryNo, uint8_t flags) :
-		name(name), startAddress(startAddress), length(length), entryNo(entryNo), flags(flags) {}
+	SectionTableEntry(string name, unsigned long length, SectionID entryNo, uint8_t flags) :
+		name(name), length(length), entryNo(entryNo), flags(flags) {}
 };
 
 class SectionTable
@@ -116,10 +115,10 @@ private:
 	uint8_t ConvertStringFlagsToByte(string flags);
 
 public:
-	SectionID InsertSection(string name, unsigned long startAddress, unsigned long length, string flags);
+	SectionID InsertSection(string name, unsigned long length, string flags);
 	SectionTableEntry* GetEntryByID(SectionID id);
 
-	bool HasPermission(SectionID id, SectionPermissions permission);
+	bool HasFlag(SectionID id, SectionPermissions permission);
 
 	stringstream GenerateTextualSectionTable();
 

@@ -15,6 +15,8 @@
 #define PUBLIC_MODIFIER ".global"
 #define EXTERN_MODIFIER ".extern"
 
+#define START_SECTION -1
+
 #include "exceptions.h"
 #include "instruction.h"
 #include "structures.h"
