@@ -44,6 +44,7 @@ private:
 	// opened -> constructor; TODO: closed -> destructor
 	ofstream output_file;
 	ofstream txt_output_file;
+	stringstream binaryBuffer;
 
 	vector<vector<string>> assemblyCode;
 	
@@ -67,6 +68,8 @@ private:
 
 	void FirstPass();
 	void SecondPass();
+
+	void WriteBinaryFile();
 
 public:
 	Assembler(string input_file_url, string output_file_url);

@@ -90,7 +90,8 @@ void Assembler::TokenizeCurrentLine(const string& line, vector<string>& collecto
 
 inline void Assembler::WriteToOutput(uint8_t byte)
 {
-	output_file.write(reinterpret_cast<char*>(&byte), sizeof(byte));
+	// outputFile
+	binaryBuffer.write(reinterpret_cast<char*>(&byte), sizeof(byte));
 
 	txt_output_file << hex << ((byte >> 4) & 0xF);
 	txt_output_file << hex << (byte & 0xF);
@@ -108,7 +109,8 @@ inline void Assembler::WriteToOutput(const Instruction& instruction)
 {
 	for (int i = 0; i < instruction.instructionSize; i++)
 	{
-		output_file << instruction.operationCode[i];
+		// outputFile
+		binaryBuffer << instruction.operationCode[i];
 
 		// START DEBUG
 		// txt_output_file << bitset<8>(instruction.operationCode[i]) << endl;
@@ -140,6 +142,24 @@ void Assembler::GenerateObjectFile()
 	StripeOffCommentsAndLoadLocally();
 	FirstPass();
 	SecondPass();
+
+	// SYMBOL TABLE
+	WriteToOutput("\n\n<!-- symbol table -->\n");
+	WriteToOutput(symbolTable.GenerateTextualSymbolTable().str());
+
+	// SECTION TABLE
+	WriteToOutput("\n<!-- section table -->\n");
+	WriteToOutput(sectionTable.GenerateTextualSectionTable().str());
+
+	// RELOCATION TABLE
+	WriteToOutput("\n<!-- relocation table -->\n");
+	WriteToOutput(relocationTable.GenerateTextualRelocationTable().str());
+	/* NOTE: if TNS should be added this is the place to do it.
+			 linked list of dependent symbols; removing of tail nodes until null returned
+			 circular depencdency detection -> if nothing is removed throw exception
+	*/
+
+	WriteBinaryFile();
 }
 
 void Assembler::FirstPass()
@@ -636,20 +656,23 @@ void Assembler::SecondPass()
 		}
 		}
 	}
+}
 
-	// SYMBOL TABLE
-	WriteToOutput("\n\n<!-- symbol table -->\n");
-	WriteToOutput(symbolTable.GenerateTextualSymbolTable().str());
+void Assembler::WriteBinaryFile()
+{
+	unsigned long sizes[3];
+	sizes[0] = symbolTable.GetSize();
+	sizes[1] = sectionTable.GetSize();
+	sizes[2] = relocationTable.GetSize();
 
-	// SECTION TABLE
-	WriteToOutput("\n<!-- section table -->\n");
-	WriteToOutput(sectionTable.GenerateTextualSectionTable().str());
+	output_file.write(reinterpret_cast<char*>(sizes), 3 * sizeof(unsigned long));
 
-	// RELOCATION TABLE
-	WriteToOutput("\n<!-- relocation table -->\n");
-	WriteToOutput(relocationTable.GenerateTextualRelocationTable().str());
-	/* NOTE: if TNS should be added this is the place to do it.
-			 linked list of dependent symbols; removing of tail nodes until null returned
-			 circular depencdency detection -> if nothing is removed throw exception
-	*/
+	for (int i = 0; i < sizes[0]; i++)
+		output_file.write(reinterpret_cast<char*>(symbolTable.GetEntryByID(i)), sizeof(SymbolTableEntry));
+	for (int i = 0; i < sizes[1]; i++)
+		output_file.write(reinterpret_cast<char*>(sectionTable.GetEntryByID(i)), sizeof(SectionTableEntry));
+	for (int i = 0; i < sizes[2]; i++)
+		output_file.write(reinterpret_cast<char*>(relocationTable.GetEntryByID(i)), sizeof(RelocationTableEntry));
+
+	output_file << binaryBuffer.str();
 }

@@ -86,6 +86,7 @@ public:
 	SymbolTableEntry* GetEntryByName(string name);
 
 	stringstream GenerateTextualSymbolTable();
+	unsigned long GetSize() { return table.size(); }
 };
 
 /////////////////////////////////////////////////////////
@@ -121,6 +122,7 @@ public:
 	stringstream GenerateTextualSectionTable();
 
 	static string DefaultFlags(SectionType type);
+	unsigned long GetSize() { return table.size(); }
 };
 
 ////////////////////////////////////////////////////////////
@@ -154,7 +156,9 @@ private:
 public:
 	void InsertRelocation(SectionID sectionNo, SymbolTableID symbolNo, unsigned long offset, RelocationType relocationType);
 	
+	RelocationTableEntry* GetEntryByID(int id) { return &table.at(id); }
 	stringstream GenerateTextualRelocationTable();
+	unsigned long GetSize() { return table.size(); }
 };
 
 #endif

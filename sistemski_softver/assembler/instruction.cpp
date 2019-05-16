@@ -308,7 +308,7 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 	if (pcRelocation)	// R_386_PC16
 	{
 		if (entry.scopeType == ScopeType::EXTERN)
-			result = -2; // -2 on 16-bit machine, because of data field length to next instruction
+			result = -2; // -2 on 16-bit machine; distance between relocation field and start of the next instruction
 		else	// GLOBAL or LOCAL are both defined in the current file
 		{
 			if (currentSection == entry.sectionNumber)
