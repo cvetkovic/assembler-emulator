@@ -26,7 +26,8 @@ enum ErrorCodes
 	INVALID_FLAGS,
 
 	LINKER_NO_FILES = 500,
-	LINKER_CANNOT_OPEN
+	LINKER_CANNOT_OPEN,
+	LINKER_SECTION_ADDRESS_UNSPECIFIED
 };
 
 class AssemblerException : public exception

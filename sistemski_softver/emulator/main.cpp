@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 {
 	if (argc > 1)
 	{
-		vector<LinkerSectionsEntry> sections;
+		LinkerSections sections;
 		vector<string> inputFiles;
 		
 		regex placeRegex("^-place=\\.{0,1}[a-zA-Z_][a-zA-Z0-9_]*@0x[0-9a-fA-F]{1,4}$");
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 				string sectionName = input.substr(input.find('=') + 1, input.find('@') - input.find('=') - 1);
 				uint16_t location = (uint16_t)strtol(input.substr(input.find('@') + 1, input.size() - input.find('@')).c_str(), 0, 16);
 
-				sections.push_back(LinkerSectionsEntry(sectionName, location));
+				sections.insert({ sectionName, location });
 			}
 			else if (regex_match(input, inputFileRegex))
 			{
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 		}
 
 		Linker linker(inputFiles, sections);
-		//Executable executable = linker.GetExecutable();
+		Executable* executable = linker.GetExecutable();
 
 		//Emulator emulator(executable);
 	}

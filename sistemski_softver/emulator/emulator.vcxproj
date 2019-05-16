@@ -121,6 +121,7 @@
   <ItemGroup>
     <ClInclude Include="cpu.h" />
     <ClInclude Include="emulator.h" />
+    <ClInclude Include="executable.h" />
     <ClInclude Include="linker.h" />
   </ItemGroup>
   <ItemGroup>

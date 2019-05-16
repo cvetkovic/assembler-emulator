@@ -2,6 +2,7 @@
 #define _LINKER_EMULATOR_H
 
 #include "../common/structures.h"
+#include "executable.h"
 
 #include <iostream>
 #include <fstream>
@@ -9,22 +10,7 @@
 #include <vector>
 using namespace std;
 
-struct LinkerSectionsEntry
-{
-	string sectionName;
-	uint16_t startLocation;
-
-	LinkerSectionsEntry(string sectionName, uint16_t startLocation) :
-		sectionName(sectionName), startLocation(startLocation) {}
-};
-
-class Linker
-{
-
-public:
-	Linker(vector<string> inputFiles, vector<LinkerSectionsEntry> sections);
-
-};
+typedef map<string, uint16_t> LinkerSections;
 
 class ObjectFile
 {
@@ -40,6 +26,33 @@ private:
 
 public:
 	ObjectFile(string url);
+	~ObjectFile();
+
+	SymbolTable& GetSymbolTable() { return symbolTable; }
+	SectionTable& GetSectionTable() { return sectionTable; }
+	RelocationTable& GetRelocationTable() { return relocationTable; }
+
+	const uint8_t& ContentRead(const unsigned long& address) const { return content[address]; }
+};
+
+class Linker
+{
+
+private:
+	size_t numberOfFiles = 0;
+	ObjectFile** objectFiles;
+	Executable* executable;
+
+	const LinkerSections linkerSections;
+
+	void Initialize(vector<string>& inputFiles, LinkerSections& sections);
+	void MergeAndLoadToMemory();
+
+public:
+	Linker(vector<string> inputFiles, LinkerSections sections) : linkerSections(sections) { Initialize(inputFiles, sections); }
+	~Linker();
+
+	Executable* GetExecutable();
 
 };
 

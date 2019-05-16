@@ -1,63 +1,8 @@
-.global a, c
-.extern
-.text
-
-jz a
-jz e
-jz b
-jz d
-
-d: 
-.long d
-mov eax, b
-mov c, eax
-mov eax, e
-
 .data
-.skip 8
-e: 
-.long a-e+d
-.long c
-.long .bss
-a:
-.long b
-
-.bss
-c:
-.skip 8
-
-.end
-
-.global test_label
-
-.section .data
-msg: .byte 1
-.skip 4
-.word 2
-.equ EQU, 0xff
+.byte 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 
 .text
-.global  main
-
-
-
-
-
-
-
-main:
-push ebp
-mov   	ebp, esp
-push   ebp
-.align 4
-mov   	ebp, esp
-push   ebp
-mov   	ebp, esp
-push   ebp
-mov   	ebp, esp
-
-skip:
-mov    eax, 0
-mov    esp, ebp
-pop    ebp
-ret
+mov r0, r1
+mov r1, r2
+mov r2, r3
+mov r4, r5
