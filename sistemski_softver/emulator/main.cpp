@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 		vector<string> inputFiles;
 		
 		regex placeRegex("^-place=\\.{0,1}[a-zA-Z_][a-zA-Z0-9_]*@0x[0-9a-fA-F]{1,4}$");
-		regex inputFileRegex("^[a-zA-Z_][a-zA-Z0-9_.]*\\.o$");
+		regex inputFileRegex("^(\\\\?([^\\/]*[\\/])*)([^\\/]+)$");
 
 		for (int i = 1; i < argc; i++)
 		{

@@ -27,13 +27,13 @@ Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumb
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 
-1              1              8              1              
-1              1              17             1              
-1              1              71             1              
-1              1              77             1              
-1              1              82             1              
-1              1              86             1              
-1              2              113            1              
-1              3              117            1              
-1              2              123            1              
-1              3              127            1              
+1              1              8              0              
+1              1              17             0              
+1              1              71             0              
+1              1              77             0              
+1              1              82             0              
+1              1              86             0              
+1              2              113            0              
+1              3              117            0              
+1              2              123            0              
+1              3              127            0              

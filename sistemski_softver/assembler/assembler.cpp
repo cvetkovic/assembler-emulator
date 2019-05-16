@@ -92,6 +92,7 @@ inline void Assembler::WriteToOutput(uint8_t byte)
 {
 	// outputFile
 	binaryBuffer.write(reinterpret_cast<char*>(&byte), sizeof(byte));
+	contentLength++;
 
 	txt_output_file << hex << ((byte >> 4) & 0xF);
 	txt_output_file << hex << (byte & 0xF);
@@ -111,6 +112,7 @@ inline void Assembler::WriteToOutput(const Instruction& instruction)
 	{
 		// outputFile
 		binaryBuffer << instruction.operationCode[i];
+		contentLength++;
 
 		// START DEBUG
 		// txt_output_file << bitset<8>(instruction.operationCode[i]) << endl;
@@ -661,18 +663,19 @@ void Assembler::SecondPass()
 void Assembler::WriteBinaryFile()
 {
 	size_t sizes[3];
+	
 	sizes[0] = symbolTable.GetSize();
 	sizes[1] = sectionTable.GetSize();
 	sizes[2] = relocationTable.GetSize();
 
 	output_file.write(reinterpret_cast<char*>(sizes), 3 * sizeof(size_t));
+	output_file.write(reinterpret_cast<char*>(&contentLength), sizeof(size_t));
 
-	for (int i = 0; i < sizes[0]; i++)
-		output_file.write(reinterpret_cast<char*>(symbolTable.GetEntryByID(i)), sizeof(SymbolTableEntry));
-	for (int i = 0; i < sizes[1]; i++)
-		output_file.write(reinterpret_cast<char*>(sectionTable.GetEntryByID(i)), sizeof(SectionTableEntry));
-	for (int i = 0; i < sizes[2]; i++)
-		output_file.write(reinterpret_cast<char*>(relocationTable.GetEntryByID(i)), sizeof(RelocationTableEntry));
-
+	// doesn't work because string is not POD type
+	/*for (int i = 0; i < sizes[0]; i++)
+		output_file.write(reinterpret_cast<char*>(symbolTable.GetEntryByID(i)), sizeof(SymbolTableEntry));*/
+	output_file << symbolTable.Serialize().str();
+	output_file << sectionTable.Serialize().str();
+	output_file << relocationTable.Serialize().str();
 	output_file << binaryBuffer.str();
 }

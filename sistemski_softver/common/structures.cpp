@@ -15,6 +15,23 @@ SymbolTableID SymbolTable::InsertSymbol(string name, unsigned long sectionNumber
 	return counter++;
 }
 
+SymbolTableID SymbolTable::InsertSymbol(const SymbolTableEntry & e)
+{
+	SymbolTableEntry entry;
+
+	entry.entryNo = e.entryNo;
+	entry.name = e.name;
+	entry.offset = e.offset;
+	entry.scopeType = e.scopeType;
+	entry.sectionNumber = e.sectionNumber;
+	entry.tokenType = e.tokenType;
+	entry.value = e.value;
+
+	table.insert({ counter, entry });
+
+	return counter++;
+}
+
 SymbolTableEntry* SymbolTable::GetEntryByID(SymbolTableID id)
 {
 	if (table.find(id) != table.end())
@@ -75,6 +92,98 @@ stringstream SymbolTable::GenerateTextualSymbolTable()
 	return output;
 }
 
+stringstream SymbolTable::Serialize()
+{
+	stringstream output;
+	   
+	char delimiter = ',';
+
+	for (size_t i = 0; i < table.size(); i++)
+	{
+		SymbolTableEntry& entry = table.at((SymbolTableID)i);
+
+		output.write(reinterpret_cast<char*>(&entry.entryNo), sizeof(entry.entryNo));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		size_t t = entry.name.size();
+		output.write(reinterpret_cast<char*>(&t), sizeof(size_t));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		const char* c = entry.name.c_str();
+		output.write(c, entry.name.size());
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.offset), sizeof(entry.offset));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		int a = entry.scopeType;
+		output.write(reinterpret_cast<char*>(&a), sizeof(a));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.sectionNumber), sizeof(entry.sectionNumber));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		int b = entry.tokenType;
+		output.write(reinterpret_cast<char*>(&b), sizeof(b));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.value), sizeof(entry.value));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+	}
+
+	return output;
+}
+
+SymbolTable SymbolTable::Deserialize(size_t numberOfElements, ifstream& input)
+{
+	SymbolTable result;
+
+	size_t length = 0;
+	char c;
+
+	for (size_t i = 0; i < numberOfElements; i++)
+	{
+		SymbolTableEntry entry;
+
+		input.read(reinterpret_cast<char*>(&entry.entryNo), sizeof(entry.entryNo));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&length), sizeof(size_t));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		if (length)
+		{
+			vector<char> tmp(length);
+			input.read(tmp.data(), length);
+			entry.name.assign(tmp.data(), length);
+		}
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.offset), sizeof(entry.offset));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		int st;
+		input.read(reinterpret_cast<char*>(&st), sizeof(st));
+		entry.scopeType = static_cast<ScopeType>(st);
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.sectionNumber), sizeof(entry.sectionNumber));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		int tt;
+		input.read(reinterpret_cast<char*>(&tt), sizeof(tt));
+		entry.tokenType = static_cast<TokenType>(tt);
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.value), sizeof(entry.value));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		result.InsertSymbol(entry);
+	}
+
+	return result;
+}
+
 ///////////////////////////////////////////////////////////
 ////////////////////// SECTION TABLE //////////////////////
 ///////////////////////////////////////////////////////////
@@ -105,6 +214,80 @@ string SectionTable::DefaultFlags(SectionType type)
 		return "wx";
 	else
 		return "";
+}
+
+stringstream SectionTable::Serialize()
+{
+	stringstream output;
+
+	char delimiter = ',';
+
+	for (size_t i = 0; i < table.size(); i++)
+	{
+		SectionTableEntry& entry = table.at((SectionID)i);
+
+		output.write(reinterpret_cast<char*>(&entry.entryNo), sizeof(entry.entryNo));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.flags), sizeof(entry.flags));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.length), sizeof(entry.length));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		size_t t = entry.name.size();
+		output.write(reinterpret_cast<char*>(&t), sizeof(t));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		const char* tt = entry.name.c_str();
+		output.write(tt, entry.name.size());
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.symbolTableEntryNo), sizeof(entry.symbolTableEntryNo));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+	}
+
+	return output;
+}
+
+SectionTable SectionTable::Deserialize(size_t numberOfElements, ifstream & input)
+{
+	SectionTable result;
+
+	size_t length = 0;
+	char c;
+
+	for (size_t i = 0; i < numberOfElements; i++)
+	{
+		SectionTableEntry entry;
+		
+		input.read(reinterpret_cast<char*>(&entry.entryNo), sizeof(entry.entryNo));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.flags), sizeof(entry.flags));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.length), sizeof(entry.length));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&length), sizeof(length));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		if (length)
+		{
+			vector<char> tmp(length);
+			input.read(tmp.data(), length);
+			entry.name.assign(tmp.data(), length);
+		}
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.symbolTableEntryNo), sizeof(entry.symbolTableEntryNo));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		result.InsertSection(entry);
+	}
+
+	return result;
 }
 
 uint8_t SectionTable::ConvertStringFlagsToByte(string flags)
@@ -152,6 +335,21 @@ SectionID SectionTable::InsertSection(string name, unsigned long length, string 
 	table.insert({ counter, entry });
 
 	return counter++;;
+}
+
+SectionID SectionTable::InsertSection(const SectionTableEntry & e)
+{
+	SectionTableEntry entry;
+
+	entry.entryNo = e.entryNo;
+	entry.flags = e.flags;
+	entry.length= e.length;
+	entry.name = e.name;
+	entry.symbolTableEntryNo = e.symbolTableEntryNo;
+
+	table.insert({ counter, entry });
+
+	return counter++;
 }
 
 SectionTableEntry* SectionTable::GetEntryByID(SectionID id)
@@ -205,6 +403,18 @@ void RelocationTable::InsertRelocation(SectionID sectionNo, SymbolTableID symbol
 	table.push_back(entry);
 }
 
+void RelocationTable::InsertRelocation(const RelocationTableEntry & e)
+{
+	RelocationTableEntry entry;
+
+	entry.offset = e.offset;
+	entry.relocationType = e.relocationType;
+	entry.sectionNo = e.sectionNo;
+	entry.symbolNo = e.symbolNo;
+
+	table.push_back(entry);
+}
+
 stringstream RelocationTable::GenerateTextualRelocationTable()
 {
 	stringstream output;
@@ -229,4 +439,61 @@ stringstream RelocationTable::GenerateTextualRelocationTable()
 	}
 
 	return output;
+}
+
+stringstream RelocationTable::Serialize()
+{
+	stringstream output;
+
+	char delimiter = ',';
+
+	for (size_t i = 0; i < table.size(); i++)
+	{
+		RelocationTableEntry& entry = table.at(i);
+
+		output.write(reinterpret_cast<char*>(&entry.offset), sizeof(entry.offset));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		int t = entry.relocationType;
+		output.write(reinterpret_cast<char*>(&t), sizeof(t));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.sectionNo), sizeof(entry.sectionNo));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.symbolNo), sizeof(entry.symbolNo));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+	}
+
+	return output;
+}
+
+RelocationTable RelocationTable::Deserialize(size_t numberOfElements, ifstream & input)
+{
+	RelocationTable result;
+
+	char c;
+
+	for (size_t i = 0; i < numberOfElements; i++)
+	{
+		RelocationTableEntry entry;
+		
+		input.read(reinterpret_cast<char*>(&entry.offset), sizeof(entry.offset));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		int rt;
+		input.read(reinterpret_cast<char*>(&rt), sizeof(rt));
+		entry.relocationType = static_cast<RelocationType>(rt);
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.sectionNo), sizeof(entry.sectionNo));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.symbolNo), sizeof(entry.symbolNo));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		result.InsertRelocation(entry);
+	}
+
+	return result;
 }

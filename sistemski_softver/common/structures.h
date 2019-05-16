@@ -7,6 +7,7 @@
 
 #include <bitset>
 #include <iomanip>
+#include <fstream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -19,15 +20,14 @@ using namespace std;
 #define FLAG_READ_ONLY	0x02
 #define FLAG_EXECUTABLE	0x01
 
-enum ScopeType
+enum ScopeType : int
 {
-	GLOBAL,
+	GLOBAL = 0,
 	LOCAL,
 	EXTERN
 };
 
-// TODO: remove this because flags are sufficient to distinguish sections
-enum SectionType
+enum SectionType : int
 {
 	ST_START = 0,
 	ST_TEXT,
@@ -69,6 +69,7 @@ struct SymbolTableEntry
 	TokenType tokenType;			// type of token
 	SymbolTableID entryNo;			// needed to link symbol with relocation table
 
+	SymbolTableEntry() {}
 	SymbolTableEntry(string name, unsigned long sectionNumber, unsigned long value, unsigned long offset, ScopeType scopeType, TokenType tokenType, SymbolTableID entryNo) :
 		name(name), sectionNumber(sectionNumber), value(value), offset(offset), scopeType(scopeType), tokenType(tokenType), entryNo(entryNo) {}
 };
@@ -82,11 +83,15 @@ private:
 
 public:
 	SymbolTableID InsertSymbol(string name, unsigned long sectionNumber, unsigned long value, unsigned long locationCounter, ScopeType scopeType, TokenType tokenType);
+	SymbolTableID InsertSymbol(const SymbolTableEntry& e);
 	SymbolTableEntry* GetEntryByID(SymbolTableID id);
 	SymbolTableEntry* GetEntryByName(string name);
 
 	stringstream GenerateTextualSymbolTable();
 	size_t GetSize() { return table.size(); }
+
+	stringstream Serialize();
+	static SymbolTable Deserialize(size_t numberOfElements, ifstream& input);
 };
 
 /////////////////////////////////////////////////////////
@@ -101,6 +106,7 @@ struct SectionTableEntry
 	SymbolTableID symbolTableEntryNo = -1;
 	uint8_t flags;
 
+	SectionTableEntry() {}
 	SectionTableEntry(string name, unsigned long length, SectionID entryNo, uint8_t flags) :
 		name(name), length(length), entryNo(entryNo), flags(flags) {}
 };
@@ -115,6 +121,7 @@ private:
 
 public:
 	SectionID InsertSection(string name, unsigned long length, string flags, unsigned long lineNumber);
+	SectionID InsertSection(const SectionTableEntry& e);
 	SectionTableEntry* GetEntryByID(SectionID id);
 
 	bool HasFlag(SectionID id, SectionPermissions permission);
@@ -123,16 +130,18 @@ public:
 
 	static string DefaultFlags(SectionType type);
 	size_t GetSize() { return table.size(); }
+
+	stringstream Serialize();
+	static SectionTable Deserialize(size_t numberOfElements, ifstream& input);
 };
 
 ////////////////////////////////////////////////////////////
 ///////////////////// RELOCATION TABLE /////////////////////
 ////////////////////////////////////////////////////////////
 
-enum RelocationType
+enum RelocationType : int
 {
-	R_386_8 = 0,
-	R_386_16,
+	R_386_16 = 0,
 	R_386_PC16
 };
 
@@ -143,6 +152,7 @@ struct RelocationTableEntry
 	unsigned long offset;
 	RelocationType relocationType;
 
+	RelocationTableEntry() {}
 	RelocationTableEntry(SectionID sectionNo, SymbolTableID symbolNo, unsigned long offset, RelocationType relocationType) :
 		sectionNo(sectionNo), symbolNo(symbolNo), offset(offset), relocationType(relocationType) {}
 };
@@ -155,10 +165,14 @@ private:
 
 public:
 	void InsertRelocation(SectionID sectionNo, SymbolTableID symbolNo, unsigned long offset, RelocationType relocationType);
-	
+	void InsertRelocation(const RelocationTableEntry& e);
+
 	RelocationTableEntry* GetEntryByID(int id) { return &table.at(id); }
 	stringstream GenerateTextualRelocationTable();
 	size_t GetSize() { return table.size(); }
+	
+	stringstream Serialize();
+	static RelocationTable Deserialize(size_t numberOfElements, ifstream& input);
 };
 
 #endif

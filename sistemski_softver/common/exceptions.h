@@ -8,8 +8,8 @@ using namespace std;
 enum ErrorCodes
 {
 	NOT_DEFINED = 0,
-	IO_INPUT_EXCEPTION = 1,
-	IO_OUTPUT_EXCEPTION = 2,
+	IO_INPUT_EXCEPTION,
+	IO_OUTPUT_EXCEPTION,
 
 	SYMBOL_EXISTS,
 	NOT_ALLOWED_TOKEN,
@@ -23,7 +23,10 @@ enum ErrorCodes
 	SYNTAX_ACCESS_MODIFIER,
 	INVALID_INSTRUCTION,
 	SECTION_ALREADY_DEFINED,
-	INVALID_FLAGS
+	INVALID_FLAGS,
+
+	LINKER_NO_FILES = 500,
+	LINKER_CANNOT_OPEN
 };
 
 class AssemblerException : public exception
@@ -67,6 +70,48 @@ public:
 	}
 
 	friend ostream& operator<<(ostream& out, const AssemblerException& ex)
+	{
+		return out << ex.what() << endl;
+	}
+};
+
+class LinkerException : public exception
+{
+private:
+	string message;
+	ErrorCodes errorCode = ErrorCodes::NOT_DEFINED;
+
+	char** a = new char*[1];
+
+public:
+	LinkerException(string message) noexcept : exception(), message(message) {}
+	LinkerException(string message, ErrorCodes errorCode) noexcept : exception(), message(message), errorCode(errorCode) {}
+	~LinkerException()
+	{
+		// TODO: check if deletion is OK
+		delete[] a[0];
+		delete a;
+	}
+
+	const char* what() const noexcept override
+	{
+		string report = "Error";
+		if (errorCode != ErrorCodes::NOT_DEFINED)
+			report += " (" + to_string(int(errorCode)) + ")";
+		else
+			report += ": ";
+
+		report += message;
+
+		char *cstr = new char[report.length() + 1];
+		strcpy(cstr, report.c_str());
+		a[0] = cstr;
+
+		// cannot return report.c_str() because it is stored on stack
+		return cstr;
+	}
+
+	friend ostream& operator<<(ostream& out, const LinkerException& ex)
 	{
 		return out << ex.what() << endl;
 	}

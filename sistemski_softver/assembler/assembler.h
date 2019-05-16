@@ -59,6 +59,7 @@ private:
 	*/
 
 	int currentBytesInline = 0;
+	size_t contentLength = 0;
 
 	void StripeOffCommentsAndLoadLocally();
 	void TokenizeCurrentLine(const string& line, vector<string>& collector);
