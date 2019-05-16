@@ -660,12 +660,12 @@ void Assembler::SecondPass()
 
 void Assembler::WriteBinaryFile()
 {
-	unsigned long sizes[3];
+	size_t sizes[3];
 	sizes[0] = symbolTable.GetSize();
 	sizes[1] = sectionTable.GetSize();
 	sizes[2] = relocationTable.GetSize();
 
-	output_file.write(reinterpret_cast<char*>(sizes), 3 * sizeof(unsigned long));
+	output_file.write(reinterpret_cast<char*>(sizes), 3 * sizeof(size_t));
 
 	for (int i = 0; i < sizes[0]; i++)
 		output_file.write(reinterpret_cast<char*>(symbolTable.GetEntryByID(i)), sizeof(SymbolTableEntry));

@@ -1,7 +1,7 @@
 #ifndef INSTRUCTION_ASSEMBLER_H_
 #define INSTRUCTION_ASSEMBLER_H_
 
-#include "token.h"
+#include "../common/token.h"
 
 #include <fstream>
 #include <iostream>

@@ -17,10 +17,10 @@
 
 #define START_SECTION -1
 
-#include "exceptions.h"
+#include "../common/exceptions.h"
 #include "instruction.h"
-#include "structures.h"
-#include "token.h"
+#include "../common/structures.h"
+#include "../common/token.h"
 
 #include <cstdint>
 #include <cmath>

@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include "assembler.h"
-#include "exceptions.h"
+#include "../common/exceptions.h"
 
 using namespace std;
 
