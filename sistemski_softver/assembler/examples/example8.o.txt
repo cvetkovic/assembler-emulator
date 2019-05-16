@@ -1,19 +1,27 @@
 <!-- section '.data' -->
 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
-
+ee ff 
 
 <!-- section '.text' -->
-24 20 22 24 22 24 24 24 26 24 28 2a 
+24 20 22 24 22 24 24 24 26 24 28 a0 09 00 bc a0
+fe ff 24 2a 00 05 00 
 
 <!-- symbol table -->
 Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
 .data          0              N/A            N/A            1              2              0              
-.text          1              N/A            N/A            1              2              1              
+labela1        0              N/A            8              1              1              1              
+labela2        0              N/A            9              1              1              2              
+labela3        0              N/A            16             0              1              3              
+procedura      N/A            N/A            N/A            2              1              4              
+.text          1              N/A            N/A            1              2              5              
+_start         1              N/A            3              1              1              6              
 
 <!-- section table -->
 Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
-.data          16             00001100       0              0              
-.text          12             00000011       1              1              
+.data          18             00001100       0              0              
+.text          23             00000011       1              5              
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 
+1              2              12             0              
+1              4              16             1              

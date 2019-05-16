@@ -317,13 +317,17 @@ uint8_t SectionTable::ConvertStringFlagsToByte(string flags)
 
 SectionID SectionTable::InsertSection(string name, unsigned long length, string flags, unsigned long lineNumber)
 {
+	uint8_t _flags = ConvertStringFlagsToByte(flags);
+	return InsertSection(name, length, _flags, lineNumber);
+}
+
+SectionID SectionTable::InsertSection(string name, unsigned long length, uint8_t _flags, unsigned long lineNumber)
+{
 	map<SectionID, SectionTableEntry>::iterator it;
 
 	for (it = table.begin(); it != table.end(); it++)
 		if (it->second.name == name)
 			throw AssemblerException("Sections with the same name ('" + name + "') have been detected.", ErrorCodes::SECTION_ALREADY_DEFINED, lineNumber);
-
-	uint8_t _flags = ConvertStringFlagsToByte(flags);
 
 	if (((_flags & FLAG_BSS) && ((_flags & FLAG_DATA) || (_flags & FLAG_EXECUTABLE))) ||
 		((_flags & FLAG_DATA) && ((_flags & FLAG_BSS) || (_flags & FLAG_EXECUTABLE))) ||
@@ -355,6 +359,17 @@ SectionID SectionTable::InsertSection(const SectionTableEntry & e)
 SectionTableEntry* SectionTable::GetEntryByID(SectionID id)
 {
 	return &table.at(id);
+}
+
+SectionTableEntry * SectionTable::GetEntryByName(string name)
+{
+	map<SectionID, SectionTableEntry>::iterator it;
+
+	for (it = table.begin(); it != table.end(); it++)
+		if (it->second.name == name)
+			return &it->second;
+
+	return 0;
 }
 
 bool SectionTable::HasFlag(SectionID id, SectionPermissions permission)

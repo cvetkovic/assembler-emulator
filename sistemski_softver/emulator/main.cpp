@@ -37,10 +37,27 @@ int main(int argc, char** argv)
 				cout << "Invalid emulator calling parameters." << endl;
 		}
 
-		Linker linker(inputFiles, sections);
-		Executable* executable = linker.GetExecutable();
+		try
+		{
+			Linker linker(inputFiles, sections);
+			Executable* executable = linker.GetExecutable();
 
-		//Emulator emulator(executable);
+			cout << "Object files have been linked successfully." << endl;
+
+			//Emulator emulator(executable);
+		}
+		catch (const LinkerException& ex)
+		{
+			cout << ex << endl;
+		}
+		catch (const exception& ex)
+		{
+			cout << "Unknown emulator error: " << endl;
+			cout << ex.what() << endl;
+			cout << endl;
+		}
+
+		return 1;
 	}
 	else
 		cout << "Emulator invocation required at least one parameter." << endl;

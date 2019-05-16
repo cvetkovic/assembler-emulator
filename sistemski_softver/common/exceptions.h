@@ -27,7 +27,12 @@ enum ErrorCodes
 
 	LINKER_NO_FILES = 500,
 	LINKER_CANNOT_OPEN,
-	LINKER_SECTION_ADDRESS_UNSPECIFIED
+	LINKER_SECTION_ADDRESS_UNSPECIFIED,
+	LINKER_SYMBOL_NOT_DEFINED, 
+	LINKER_NO_START,
+	LINKER_UNCONSISTENT_FLAGS,
+	LINKER_SECTION_OVERLAPPING,
+	LINKER_MULTIPLE_SYMBOL_DEFINITION
 };
 
 class AssemblerException : public exception
@@ -98,7 +103,7 @@ public:
 	{
 		string report = "Error";
 		if (errorCode != ErrorCodes::NOT_DEFINED)
-			report += " (" + to_string(int(errorCode)) + ")";
+			report += " (" + to_string(int(errorCode)) + "): ";
 		else
 			report += ": ";
 

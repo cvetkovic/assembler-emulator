@@ -121,8 +121,10 @@ private:
 
 public:
 	SectionID InsertSection(string name, unsigned long length, string flags, unsigned long lineNumber);
+	SectionID InsertSection(string name, unsigned long length, uint8_t flags, unsigned long lineNumber);
 	SectionID InsertSection(const SectionTableEntry& e);
 	SectionTableEntry* GetEntryByID(SectionID id);
+	SectionTableEntry* GetEntryByName(string name);
 
 	bool HasFlag(SectionID id, SectionPermissions permission);
 

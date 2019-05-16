@@ -327,7 +327,7 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 		// extern fields relocations are set at link time to absolute address
 		// by just adding the starting address to 0 offset
 		if (entry.scopeType == ScopeType::EXTERN)
-			result = instructionSize;
+			result = 0;
 		// fields in no matter what section in the current file should be set to
 		// their offset and at link time just added with absolute address of their
 		// respected section

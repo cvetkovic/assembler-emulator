@@ -10,6 +10,8 @@
 #include <vector>
 using namespace std;
 
+#define START_SYMBOL "_start"
+
 typedef map<string, uint16_t> LinkerSections;
 
 class ObjectFile
@@ -43,13 +45,15 @@ private:
 	ObjectFile** objectFiles;
 	Executable* executable;
 
-	const LinkerSections linkerSections;
+	const LinkerSections sectionStartMap;
 
 	void Initialize(vector<string>& inputFiles, LinkerSections& sections);
-	void MergeAndLoadToMemory();
+	void MergeAndLoadExecutable();
+	void ResolveRelocations();
+	void ResolveStartSymbol();
 
 public:
-	Linker(vector<string> inputFiles, LinkerSections sections) : linkerSections(sections) { Initialize(inputFiles, sections); }
+	Linker(vector<string> inputFiles, LinkerSections sectionStart) : sectionStartMap(sectionStart) { Initialize(inputFiles, sectionStart); }
 	~Linker();
 
 	Executable* GetExecutable();
