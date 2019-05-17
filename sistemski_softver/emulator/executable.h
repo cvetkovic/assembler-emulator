@@ -22,6 +22,7 @@ public:
 	
 	uint16_t& InitialPC() { return initialPC; }
 	friend class Linker;
+	friend class Emulator;
 };
 
 #endif

@@ -35,5 +35,8 @@
     <ClCompile Include="linker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="emulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
