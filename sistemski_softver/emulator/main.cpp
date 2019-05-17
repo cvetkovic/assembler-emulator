@@ -2,6 +2,7 @@
 #define _MAIN_EMULATOR_H
 
 #include "linker.h"
+#include "emulator.h"
 
 #include <iostream>
 #include <regex>
@@ -41,12 +42,17 @@ int main(int argc, char** argv)
 		{
 			Linker linker(inputFiles, sections);
 			Executable* executable = linker.GetExecutable();
-
 			cout << "Object files have been linked successfully." << endl;
 
-			//Emulator emulator(executable);
+			Emulator emulator(executable);
+			emulator.Run();
+			cout << "Program has been successfully completed." << endl;
 		}
 		catch (const LinkerException& ex)
+		{
+			cout << ex << endl;
+		}
+		catch (const EmulatorException& ex)
 		{
 			cout << ex << endl;
 		}

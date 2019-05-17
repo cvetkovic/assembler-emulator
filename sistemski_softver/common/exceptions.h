@@ -32,7 +32,10 @@ enum ErrorCodes
 	LINKER_NO_START,
 	LINKER_UNCONSISTENT_FLAGS,
 	LINKER_SECTION_OVERLAPPING,
-	LINKER_MULTIPLE_SYMBOL_DEFINITION
+	LINKER_MULTIPLE_SYMBOL_DEFINITION,
+
+	EMULATOR_UNKNOWN_INSTRUCTION = 1000,
+	EMULATOR_UNKNOWN_ADDRESSING
 };
 
 class AssemblerException : public exception
@@ -118,6 +121,48 @@ public:
 	}
 
 	friend ostream& operator<<(ostream& out, const LinkerException& ex)
+	{
+		return out << ex.what() << endl;
+	}
+};
+
+class EmulatorException : public exception
+{
+private:
+	string message;
+	ErrorCodes errorCode = ErrorCodes::NOT_DEFINED;
+
+	char** a = new char*[1];
+
+public:
+	EmulatorException(string message) noexcept : exception(), message(message) {}
+	EmulatorException(string message, ErrorCodes errorCode) noexcept : exception(), message(message), errorCode(errorCode) {}
+	~EmulatorException()
+	{
+		// TODO: check if deletion is OK
+		delete[] a[0];
+		delete a;
+	}
+
+	const char* what() const noexcept override
+	{
+		string report = "Error";
+		if (errorCode != ErrorCodes::NOT_DEFINED)
+			report += " (" + to_string(int(errorCode)) + "): ";
+		else
+			report += ": ";
+
+		report += message;
+
+		char *cstr = new char[report.length() + 1];
+		strcpy(cstr, report.c_str());
+		a[0] = cstr;
+
+		// cannot return report.c_str() because it is stored on stack
+		return cstr;
+	}
+
+	friend ostream& operator<<(ostream& out, const EmulatorException& ex)
 	{
 		return out << ex.what() << endl;
 	}

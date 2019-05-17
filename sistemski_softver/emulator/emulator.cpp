@@ -13,8 +13,7 @@ void Emulator::Run()
 
 	while (!processor.halted)
 	{
-		processor.InstructionFetch();
-		processor.InstructionDecode();
+		processor.InstructionFetchAndDecode();
 		processor.InstructionExecute();
 		processor.InstructionHandleInterrupt();
 	}

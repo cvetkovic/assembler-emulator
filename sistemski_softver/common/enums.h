@@ -24,4 +24,33 @@ enum TokenType
 	FLAGS = 15
 };
 
+enum OperandSize
+{
+	BYTE = 0,
+	WORD = 1
+};
+
+enum AddressingType
+{
+	IMMEDIATELY = 0,
+	REGISTER_DIRECT,
+	REGISTER_INDIRECT_NO_OFFSET,
+	REGISTER_INDIRECT_8_BIT_OFFSET,
+	REGISTER_INDIRECT_16_BIT_OFFSET,
+	MEMORY_DIRECT
+};
+
+enum Operand
+{
+	FIRST_OPERAND,
+	SECOND_OPERAND
+};
+
+enum ByteSelector
+{
+	NOT_APPLICABLE = -1,
+	LOWER = 0,
+	HIGHER = 1,
+};
+
 #endif

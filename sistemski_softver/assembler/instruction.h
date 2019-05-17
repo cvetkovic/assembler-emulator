@@ -9,16 +9,6 @@
 #include <queue>
 using namespace std;
 
-struct InstructionDetails
-{
-	uint8_t numberOfOperands;
-	uint8_t opCode;
-	bool jumpInstruction;
-
-	InstructionDetails(uint8_t numberOfOperands, uint8_t opCode, bool jumpInstruction = false) :
-		numberOfOperands(numberOfOperands), opCode(opCode), jumpInstruction(jumpInstruction) {}
-};
-
 static map<string, InstructionDetails> instructionOperandMap = {
 		{"halt", InstructionDetails(0, 1)},
 		{"ret", InstructionDetails(0, 24, true)},
@@ -54,13 +44,7 @@ class Instruction
 private:
 	uint8_t operationCode[7] = { 0,0,0,0,0,0,0 };
 	uint8_t instructionSize = 0;
-
-	enum OperandSize
-	{
-		BYTE = 0,
-		WORD = 1
-	};
-
+	
 	unsigned long GenerateRelocation(string instructionMnemonic, const SymbolTableEntry& entry, unsigned long locationCounter, unsigned long writeToPosition, int instructionSize, SectionID currentSection, SymbolTable& symbolTable, RelocationTable& relocationTable);
 
 public:

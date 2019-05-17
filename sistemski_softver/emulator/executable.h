@@ -3,6 +3,7 @@
 
 #define MEMORY_ADDRESS_SPACE 65536
 
+#include "../common/structures.h"
 #include <cstdint>
 
 class Executable
