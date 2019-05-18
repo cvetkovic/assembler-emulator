@@ -70,10 +70,10 @@
     <None Include="examples\example12.asm">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="examples\example13.asm">
+    <None Include="examples\interrupts.asm">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="examples\interrupts.asm">
+    <None Include="examples\infinite_loop.asm">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

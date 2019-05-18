@@ -307,7 +307,7 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 
 	if (pcRelocation)	// R_386_PC16
 	{
-		if (entry.scopeType == ScopeType::EXTERN)
+		/*if (entry.scopeType == ScopeType::EXTERN)
 			result = -2; // -2 on 16-bit machine; distance between relocation field and start of the next instruction
 		else	// GLOBAL or LOCAL are both defined in the current file
 		{
@@ -315,7 +315,10 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 				result = entry.offset - locationCounter - 2; // return without relocating wrong
 			else
 				result = entry.offset - 2;
-		}
+		}*/
+
+		// TODO: check this
+		result = -2;
 
 		relocationTable.InsertRelocation(currentSection,
 			entry.entryNo,

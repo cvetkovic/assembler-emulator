@@ -78,6 +78,10 @@ uint16_t& CPU::GetReference(Operand op)
 	uint16_t& operand = (op == Operand::FIRST_OPERAND ? operand1 : operand2);
 	uint8_t& registerSelector = (op == Operand::FIRST_OPERAND ? registerSelector1 : registerSelector2);
 
+	// operand is already in operand reference if jump instruction
+	if (cpuInstructionsMap.at(instructionMnemonic).jumpInstruction)
+		return operand;
+
 	switch (addressingType)
 	{
 	case AddressingType::IMMEDIATELY:
@@ -97,7 +101,7 @@ uint16_t& CPU::GetReference(Operand op)
 	case AddressingType::REGISTER_INDIRECT_16_BIT_OFFSET:
 		return (uint16_t&)memory_read(registerFile[registerSelector] + (int16_t)operand);
 	case AddressingType::MEMORY_DIRECT:
-		return (uint16_t&)memory_read(operand);
+		return *((uint16_t*)(&memory_read(operand)));
 	default:
 		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
 		break;
@@ -319,7 +323,7 @@ void CPU::InstructionExecute()
 	case InstructionMnemonic::JMP:
 	{
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		pc = dst;
+		pc += (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::JEQ:
@@ -372,7 +376,7 @@ void CPU::InstructionHandleInterrupt()
 {
 	char c;
 	memoryMutex.lock();
-	if (c = (char)memory_read(TERMINAL_DATA_OUT) != 0)
+	if ((c = (char)memory_read(TERMINAL_DATA_OUT)) != 0)
 	{
 		memory_write(TERMINAL_DATA_OUT, 0);
 
@@ -390,8 +394,8 @@ void CPU::InstructionHandleInterrupt()
 	InterruptType itype = interruptRequests.top();
 	// INT_INVALID_INSTRUCTION is non-maskable interrupt
 	if (((itype != InterruptType::INT_INVALID_INSTRUCTION) && (!(psw & FLAG_I))) ||
-		((itype == InterruptType::KEYBOARD) && (psw & FLAG_Tl)) ||
-		((itype == InterruptType::TIMER) && (psw & FLAG_Tr)))
+		((itype == InterruptType::KEYBOARD) && (!(psw & FLAG_Tl))) ||
+		((itype == InterruptType::TIMER) && (!(psw & FLAG_Tr))))
 	{
 		emulatorStatusMutex.unlock();
 		return;
@@ -402,7 +406,7 @@ void CPU::InstructionHandleInterrupt()
 	memory_push_16(pc);
 	memory_push_16(psw);
 
-	psw = psw & !FLAG_I;
+	psw = psw & (~(int16_t)FLAG_I);
 	pc = memory_read_16(IVT_START + 2 * (uint16_t)itype);
 }
 
@@ -411,12 +415,12 @@ inline void CPU::SetFlagsZN(uint8_t flags, int16_t result)
 	if ((flags & FLAG_Z) && (result == 0))
 		psw = psw | FLAG_Z;
 	else
-		psw = psw & !FLAG_Z;
+		psw = psw & (~(int16_t)FLAG_Z);
 
 	if ((flags & FLAG_N) && (result < 0))
 		psw = psw | FLAG_N;
 	else
-		psw = psw & !FLAG_N;
+		psw = psw & (~(int16_t)FLAG_N);
 }
 
 inline void CPU::SetFlagO(int16_t src, int16_t dst, int16_t r, InstructionMnemonic operation)
@@ -428,7 +432,7 @@ inline void CPU::SetFlagO(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 		if ((src >= 0 && dst >= 0 && r < 0) || (src < 0 && dst < 0 && r >= 0))
 			psw = psw | FLAG_O;
 		else
-			psw = psw & !FLAG_O;
+			psw = psw & (~(int16_t)FLAG_O);
 		break;
 	}
 	case InstructionMnemonic::SUB:
@@ -437,7 +441,7 @@ inline void CPU::SetFlagO(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 		if ((src >= 0 && dst < 0 && r < 0) || (src < 0 && dst >= 0 && r >= 0))
 			psw = psw | FLAG_O;
 		else
-			psw = psw & !FLAG_O;
+			psw = psw & (~(int16_t)FLAG_O);
 		break;
 	}
 	}
@@ -453,8 +457,8 @@ inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 		/*if ((r >= 0 && (src1 < 0 || src2 < 0)) || (r < 0 && src1 < 0 && src2 < 0))
 			psw = psw | FLAG_C;
 		else
-			psw = psw & !FLAG_C;*/
-		break;
+			psw = psw & (~(int16_t)FLAG_C);
+		break;*/
 	}
 	case InstructionMnemonic::SUB:
 	case InstructionMnemonic::CMP:
@@ -488,7 +492,7 @@ CPU::~CPU()
 
 void CPU::WriteIO(const uint16_t & address, const uint8_t & data)
 {
-	if (data >= MEMORY_MAPPED_REGISTERS_START && data <= MEMORY_MAPPED_REGISTERS_END)
+	if (address >= MEMORY_MAPPED_REGISTERS_START && address <= MEMORY_MAPPED_REGISTERS_END)
 	{
 		memoryMutex.lock();
 		memory_write(address, data);

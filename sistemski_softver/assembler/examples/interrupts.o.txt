@@ -1,25 +1,36 @@
 <!-- section 'iv_table' -->
-00 00 2b 00 2c 00 2d 00 00 00 00 00 00 00 00 00
+00 00 32 00 c6 00 c7 00 00 00 00 00 00 00 00 00
 
 
 <!-- section 'interrupts' -->
 24 20 00 00 00 24 22 00 00 00 24 24 00 00 00 24
 26 00 00 00 24 28 00 00 00 24 2a 00 00 00 24 2c
-00 00 ff 24 a0 10 ff 00 00 00 0c 0c 0c 0c 
+00 00 ff 24 a0 00 ff 00 00 00 24 a0 10 ff 00 00
+00 0c 24 a0 00 ff 00 49 00 24 a0 00 ff 00 6e 00
+24 a0 00 ff 00 74 00 24 a0 00 ff 00 65 00 24 a0
+00 ff 00 72 00 24 a0 00 ff 00 72 00 24 a0 00 ff
+00 75 00 24 a0 00 ff 00 70 00 24 a0 00 ff 00 74
+00 24 a0 00 ff 00 20 00 24 a0 00 ff 00 31 00 24
+a0 00 ff 00 20 00 24 a0 00 ff 00 69 00 24 a0 00
+ff 00 6e 00 24 a0 00 ff 00 76 00 24 a0 00 ff 00
+6f 00 24 a0 00 ff 00 6b 00 24 a0 00 ff 00 65 00
+24 a0 00 ff 00 64 00 24 a0 00 ff 00 21 00 24 a0
+00 ff 00 0d 00 0c cc 8c 20 24 20 a0 02 ff 24 a0
+00 ff 20 94 20 cc 
 
 <!-- symbol table -->
 Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
 iv_table       0              N/A            N/A            1              2              0              
 interrupts     1              N/A            N/A            1              2              1              
 ivt_entry0     1              N/A            0              0              1              2              
-ivt_entry1     1              N/A            43             0              1              3              
-ivt_entry2     1              N/A            44             1              1              4              
-ivt_entry3     1              N/A            45             1              1              5              
+ivt_entry1     1              N/A            50             0              1              3              
+ivt_entry2     1              N/A            198            1              1              4              
+ivt_entry3     1              N/A            199            1              1              5              
 
 <!-- section table -->
 Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
 iv_table       16             00001001       0              0              
-interrupts     46             00000011       1              1              
+interrupts     214            00000011       1              1              
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 

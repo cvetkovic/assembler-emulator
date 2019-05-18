@@ -14,6 +14,7 @@ inline void Emulator::InitializeCPU()
 	// initial stack pointer is set by interrupt vector #0
 	// processor.sp = 0xFFFF;
 	processor.pc = executable->initialPC;
+	processor.psw = FLAG_I | FLAG_Tl | FLAG_Tr;
 	processor.initializationFinished = true;
 	processor.halted = false;
 	processor.StartThreads();

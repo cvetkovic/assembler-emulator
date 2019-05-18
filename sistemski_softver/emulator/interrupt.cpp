@@ -15,10 +15,11 @@ void KeyboardHandler(CPU* processor)
 		}
 		statusMutex.unlock();
 
+		// NOTE: getchar() return char and after than '\n (0x0a ascii)'
 		char input = getchar();
 		bool interruptRequested = false;
 
-		if (!processor->GetHaltedStatus())
+		if (!processor->GetHaltedStatus() && input != '\n')
 		{
 			// memory mutex is in CPU class
 			processor->WriteIO(TERMINAL_DATA_IN, input);

@@ -146,8 +146,8 @@ void Linker::ResolveRelocations()
 				}
 				case RelocationType::R_386_PC16:
 				{
-					uint8_t lowByte = executable->MemoryRead((uint8_t)entry.offset);
-					uint8_t highByte = executable->MemoryRead((uint8_t)(entry.offset + 1));
+					uint8_t lowByte = executable->MemoryRead((uint16_t)entry.offset);
+					uint8_t highByte = executable->MemoryRead((uint16_t)(entry.offset + 1));
 					int16_t contentToWrite = (highByte << 8) | lowByte;
 
 					/* According to the ELF specification, the relocation value in R_386_PC32 mode
