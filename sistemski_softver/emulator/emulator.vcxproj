@@ -122,11 +122,14 @@
     <ClInclude Include="cpu.h" />
     <ClInclude Include="emulator.h" />
     <ClInclude Include="executable.h" />
+    <ClInclude Include="interrupt.h" />
     <ClInclude Include="linker.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cpu.cpp" />
     <ClCompile Include="emulator.cpp" />
+    <ClCompile Include="executable.cpp" />
+    <ClCompile Include="interrupt.cpp" />
     <ClCompile Include="linker.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

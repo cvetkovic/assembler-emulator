@@ -7,7 +7,7 @@ void Linker::Initialize(vector<string>& inputFiles, LinkerSections& sections)
 
 	numberOfFiles = inputFiles.size();
 	objectFiles = new ObjectFile*[numberOfFiles];
-	executable = new Executable();
+	executable = new Executable(sectionStartMap);
 	for (size_t i = 0; i < inputFiles.size(); i++)
 		objectFiles[i] = new ObjectFile(inputFiles.at(i));
 }
@@ -31,6 +31,10 @@ void Linker::MergeAndLoadExecutable()
 		{
 			SectionTableEntry& entry = *objectFile.GetSectionTable().GetEntryByID((SectionID)j);
 
+			// continue if section in object files is marked that it should be loaded
+			if (entry.flags & FLAG_NOT_LOADED)
+				continue;
+
 			// checking if linker caller specified where this section should be loaded
 			if (location.find(entry.name) == location.end())
 				throw LinkerException("Call linker with specifying loading address of '" + entry.name + "' section.", ErrorCodes::LINKER_SECTION_ADDRESS_UNSPECIFIED);
@@ -42,6 +46,11 @@ void Linker::MergeAndLoadExecutable()
 
 			// getting address where section will be loaded
 			uint16_t addressToWriteTo = location.find(entry.name)->second;
+
+			if (addressToWriteTo >= MEMORY_MAPPED_REGISTERS_START)
+				throw LinkerException("Section cannot be put into space reserved for memory mapped registers (0xFF00-0xFFFF).", ErrorCodes::LINKER_MEMORY_MAPPED_CONSTRAINT);
+			else if ((entry.name != IVT_SECTION_NAME) && (addressToWriteTo >= IVT_START) && (addressToWriteTo < IVT_START + 2 * IVT_LENGTH))
+				throw LinkerException("Section cannot be put into space reserved for interrupt vector table (0x0000 - 2 * IVT_LENGTH).", ErrorCodes::LINKER_IVT_CONSTRAINT);
 
 			// add loadingAddress to offset of each symbol in current section symbol table
 			for (SymbolTableID x = 0; x < objectFile.GetSymbolTable().GetSize(); x++)
@@ -79,7 +88,9 @@ void Linker::MergeAndLoadExecutable()
 				newLength = (uint16_t)executable->sectionTable.GetEntryByName(entry.name)->length + (uint16_t)entry.length;
 			for (it = sectionStartMap.begin(); it != sectionStartMap.end(); it++)
 			{
-				if (it->second > addressToWriteTo && newLength > it->second && it->first != entry.name)
+				if ((it->second <= addressToWriteTo) && 
+					(addressToWriteTo + newLength < location.find(it->first)->second) &&
+					(it->first != entry.name))
 					throw LinkerException("Cannot link section '" + entry.name + "' because it would overlap section '" + it->first + "'.", ErrorCodes::LINKER_SECTION_OVERLAPPING);
 			}
 			// copying from objectFile.content to executable.memory
@@ -173,6 +184,7 @@ void Linker::ResolveStartSymbol()
 		{
 			executable->initialPCDefined = true;
 			executable->initialPC = (uint16_t)executable->symbolTable.GetEntryByID((SymbolTableID)i)->offset;
+			return;
 		}
 	}
 
@@ -185,8 +197,6 @@ Linker::~Linker()
 	for (size_t i = 0; i < numberOfFiles; i++)
 		delete objectFiles[i];
 	delete[] objectFiles;
-
-	delete executable;
 }
 
 Executable* Linker::GetExecutable()

@@ -1,5 +1,12 @@
 #include "cpu.h"
 
+const uint16_t CPU::memory_read_16(const uint16_t & address)
+{
+	uint16_t r = memory_read(address);
+	r = r | (memory_read(address + 1) << 8);
+	return r;
+}
+
 void CPU::ResolveAddressing(uint8_t rawData, Operand op)
 {
 	uint16_t& operand = (op == Operand::FIRST_OPERAND ? operand1 : operand2);
@@ -11,9 +18,9 @@ void CPU::ResolveAddressing(uint8_t rawData, Operand op)
 	{
 	case AddressingType::IMMEDIATELY:
 	{
-		operand = memory[pc++]; // lower bytes
+		operand = memory_read(pc++); // lower bytes
 		if (operandSize == OperandSize::WORD)
-			operand = (operand | (memory[pc++] << 8)); // higher bytes
+			operand = (operand | (memory_read(pc++) << 8)); // higher bytes
 		break;
 	}
 	case AddressingType::REGISTER_DIRECT:
@@ -33,20 +40,20 @@ void CPU::ResolveAddressing(uint8_t rawData, Operand op)
 	case AddressingType::REGISTER_INDIRECT_8_BIT_OFFSET:
 	{
 		registerSelector = ((rawData >> 1) & 0x0F);
-		operand = memory[pc++]; // lower bytes
+		operand = memory_read(pc++); // lower bytes
 		break;
 	}
 	case AddressingType::REGISTER_INDIRECT_16_BIT_OFFSET:
 	{
 		registerSelector = ((rawData >> 1) & 0x0F);
-		operand = memory[pc++]; // lower bytes
-		operand = (operand | (memory[pc++] << 8)); // higher bytes
+		operand = memory_read(pc++); // lower bytes
+		operand = (operand | (memory_read(pc++) << 8)); // higher bytes
 		break;
 	}
 	case AddressingType::MEMORY_DIRECT:
 	{
-		operand = memory[pc++]; // lower bytes
-		operand = (operand | (memory[pc++] << 8)); // higher bytes
+		operand = memory_read(pc++); // lower bytes
+		operand = (operand | (memory_read(pc++) << 8)); // higher bytes
 		break;
 	}
 	default:
@@ -78,17 +85,15 @@ uint16_t& CPU::GetReference(Operand op)
 	case AddressingType::REGISTER_DIRECT:
 		return registerFile[registerSelector];
 	case AddressingType::REGISTER_INDIRECT_NO_OFFSET:
-		return (uint16_t&)memory[registerFile[registerSelector]];
+		return (uint16_t&)memory_read(registerFile[registerSelector]);
 	case AddressingType::REGISTER_INDIRECT_8_BIT_OFFSET:
-		return (uint16_t&)memory[registerFile[registerSelector] + (int8_t)(operand & 0xFF)];
+		return (uint16_t&)memory_read(registerFile[registerSelector] + (int8_t)(operand & 0xFF));
 	case AddressingType::REGISTER_INDIRECT_16_BIT_OFFSET:
-		return (uint16_t&)memory[registerFile[registerSelector] + (int16_t)operand];
+		return (uint16_t&)memory_read(registerFile[registerSelector] + (int16_t)operand);
 	case AddressingType::MEMORY_DIRECT:
-		return (uint16_t&)memory[operand];
+		return (uint16_t&)memory_read(operand);
 	default:
-	{
-		break;
-	}
+		throw EmulatorException("Unknown addressing type.", ErrorCodes::EMULATOR_UNKNOWN_ADDRESSING);
 	}
 }
 
@@ -96,8 +101,9 @@ void CPU::InstructionFetchAndDecode()
 {
 	uint8_t IP;
 	int writeTo = 0;
+	pcBeforeInstruction = pc;
 
-	IP = memory[pc++];
+	IP = memory_read(pc++);
 	uint8_t instructionCode = ((IP >> 3) & 0x1F);
 	uint8_t size = ((IP & 0x04) >> 2);
 	if (instructionCode >= 1 && instructionCode <= 25)
@@ -119,15 +125,15 @@ void CPU::InstructionFetchAndDecode()
 	}
 	case 1:
 	{
-		uint8_t m = memory[pc++];
+		uint8_t m = memory_read(pc++);
 		ResolveAddressing(m, Operand::FIRST_OPERAND);
 		break;
 	}
 	case 2:
 	{
-		uint8_t m1 = memory[pc++];
+		uint8_t m1 = memory_read(pc++);
 		ResolveAddressing(m1, Operand::FIRST_OPERAND);
-		uint8_t m2 = memory[pc++];
+		uint8_t m2 = memory_read(pc++);
 		ResolveAddressing(m2, Operand::SECOND_OPERAND);
 		break;
 	}
@@ -138,6 +144,9 @@ void CPU::InstructionFetchAndDecode()
 
 void CPU::InstructionExecute()
 {
+	if (!executable->CheckIfExecutable(pcBeforeInstruction, pc - pcBeforeInstruction))
+		EmulatorException("Loaded code is not in executable section. Emulation aborted.", ErrorCodes::EMULATOR_NON_EXECUTABLE_SECTION);
+	
 	switch (instructionMnemonic)
 	{
 	case InstructionMnemonic::HALT:
@@ -159,7 +168,7 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 
 		memory_push_16(psw);
-		pc = memory[(dst % 8) << 1];
+		pc = memory_read((dst % 8) << 1);
 
 		break;
 	}
@@ -168,23 +177,27 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		dst = src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::ADD:
 	{
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
+		SetFlagO(src, dst, dst + src, InstructionMnemonic::ADD);
+		SetFlagC(src, dst, dst + src, InstructionMnemonic::ADD);
 		dst += src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_O | FLAG_C | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::SUB:
 	{
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
+		SetFlagO(src, dst, dst - src, InstructionMnemonic::SUB);
+		SetFlagC(src, dst, dst - src, InstructionMnemonic::SUB);
 		dst -= src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_O | FLAG_C | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::MUL:
@@ -192,7 +205,7 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		dst *= src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::DIV:
@@ -200,7 +213,7 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		dst /= src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::CMP:
@@ -208,14 +221,16 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		uint16_t temp = dst - src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_O | FLAG_C | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)temp);
+		SetFlagO(src, dst, temp, InstructionMnemonic::CMP);
+		SetFlagC(src, dst, temp, InstructionMnemonic::CMP);
 		break;
 	}
 	case InstructionMnemonic::NOT:
 	{
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		dst = !dst;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, dst);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::AND:
@@ -223,7 +238,7 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		dst = dst & src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::OR:
@@ -231,7 +246,7 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		dst = dst | src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::XOR:
@@ -239,7 +254,7 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		dst = dst ^ src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::TEST:
@@ -247,31 +262,43 @@ void CPU::InstructionExecute()
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
 		uint16_t temp = dst & src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)temp);
 		break;
 	}
 	case InstructionMnemonic::SHL:
 	{
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
+		SetFlagC(src, dst, dst << src, InstructionMnemonic::CMP);
 		dst = dst << src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_C | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::SHR:
 	{
 		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
+		SetFlagC(src, dst, dst >> src, InstructionMnemonic::CMP);
 		dst = dst >> src;
-		MemorizeLazyFlags(FLAG_Z | FLAG_C | FLAG_N, dst, true, src);
+		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
 		break;
 	}
 	case InstructionMnemonic::PUSH:
 	{
+		uint16_t& src = GetReference(Operand::FIRST_OPERAND);
+		if (operandSize == OperandSize::BYTE)
+			memory_push(src & 0xFF);
+		else
+			memory_push_16(src);
 		break;
 	}
 	case InstructionMnemonic::POP:
 	{
+		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		if (operandSize == OperandSize::BYTE)
+			dst = memory_pop();
+		else
+			dst = memory_pop_16();
 		break;
 	}
 	case InstructionMnemonic::JMP:
@@ -282,19 +309,30 @@ void CPU::InstructionExecute()
 	}
 	case InstructionMnemonic::JEQ:
 	{
+		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		if (GetZ())
+			pc = dst;
 		break;
 	}
 	case InstructionMnemonic::JNE:
 	{
+		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		if (!GetZ())
+			pc = dst;
 		break;
 	}
 	case InstructionMnemonic::JGT:
 	{
+		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		if (GetZ() && (GetO() == !GetN()))	// ZERO=0 && (OVERFLOW=SIGNED)
+			pc = dst;
 		break;
 	}
 	case InstructionMnemonic::CALL:
 	{
+		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
 		memory_push_16(pc);
+		pc = dst;
 		break;
 	}
 	case InstructionMnemonic::RET:
@@ -317,62 +355,87 @@ void CPU::InstructionHandleInterrupt()
 {
 }
 
-void CPU::MemorizeLazyFlags(uint8_t flags, uint16_t result, uint16_t dst, bool srcSet = true, uint16_t src = 0)
+inline void CPU::SetFlagsZN(uint8_t flags, int16_t result)
 {
-	/*if (flags & FLAG_Z)
-	{
-		lazyFlag.Z = dst;
-		Z_RES = result;
-		if (srcSet)
-			Z_SRC = src;
-	}
+	if ((flags & FLAG_Z) && (result == 0))
+		psw = psw | FLAG_Z;
+	else
+		psw = psw & !FLAG_Z;
 
-	if (flags & FLAG_O)
-	{
-		O_DST = dst;
-		if (srcSet)
-			O_SRC = src;
-	}
-
-	if (flags & FLAG_C)
-	{
-		O_DST = dst;
-		if (srcSet)
-			O_SRC = src;
-	}
-
-	if (flags & FLAG_N)
-	{
-		Z_DST = dst;
-		if (srcSet)
-			Z_SRC = src;
-	}*/
+	if ((flags & FLAG_N) && (result < 0))
+		psw = psw | FLAG_N;
+	else
+		psw = psw & !FLAG_N;
 }
 
-void CPU::KeyboardInterruptRoutine()
+inline void CPU::SetFlagO(int16_t src, int16_t dst, int16_t r, InstructionMnemonic operation)
 {
-	/*bool running = false;
-
-	while (1)
+	switch (operation)
 	{
-		emulatorStatusMutex.lock();
-		if (halted)
-		{
-			emulatorStatusMutex.unlock();
-			break;	// exit from this loop
-		}
-		emulatorStatusMutex.unlock();
-
-		char input = getchar();
-
-		memoryMutex.lock();
-		if (!halted)
-			memory[KEYBOARD_DATA_IN] = input;
+	case InstructionMnemonic::ADD:
+	{
+		if ((src >= 0 && dst >= 0 && r < 0) || (src < 0 && dst < 0 && r >= 0))
+			psw = psw | FLAG_O;
 		else
-			running = false;
-		memoryMutex.unlock();
+			psw = psw & !FLAG_O;
+		break;
+	}
+	case InstructionMnemonic::SUB:
+	{
+		// TODO: check this
+		if ((src >= 0 && dst < 0 && r < 0) || (src < 0 && dst >= 0 && r >= 0))
+			psw = psw | FLAG_O;
+		else
+			psw = psw & !FLAG_O;
+		break;
+	}
+	}
+}
 
-		if (running)
-			RegisterInterrupt();
-	}*/
+inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemonic operation)
+{
+	switch (operation)
+	{
+	case InstructionMnemonic::ADD:
+	{
+		// TODO: fix this
+		/*if ((r >= 0 && (src1 < 0 || src2 < 0)) || (r < 0 && src1 < 0 && src2 < 0))
+			psw = psw | FLAG_C;
+		else
+			psw = psw & !FLAG_C;*/
+		break;
+	}
+	case InstructionMnemonic::SUB:
+	case InstructionMnemonic::CMP:
+	{
+		break;
+	}
+	case InstructionMnemonic::SHL:
+	{
+		break;
+	}
+	case InstructionMnemonic::SHR:
+	{
+		break;
+	}
+	}
+}
+
+CPU::CPU()
+{
+	keyboardThread = new thread(KeyboardHandler, this);
+}
+
+CPU::~CPU()
+{
+	keyboardThread->join();
+	delete keyboardThread;
+}
+
+void CPU::WriteIO(const uint16_t & address, const uint8_t & data)
+{
+	if (data >= MEMORY_MAPPED_REGISTERS_START && data <= MEMORY_MAPPED_REGISTERS_END)
+		memory_write(address, data);
+	else
+		throw EmulatorException("Cannot write with this method outisde of I/O space.");
 }

@@ -285,8 +285,9 @@ void Assembler::FirstPass()
 					currentLineTokens.pop();
 
 					if ((operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL) &&
-						(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
-						throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+						(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX) && 
+						(operand.GetTokenType() != TokenType::SYMBOL))
+						throw AssemblerException("Directive '.word' expects decimal, hex or symbol as operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
 					// skip 2 * val_byte byte
 					locationCounter += 2;
@@ -590,11 +591,24 @@ void Assembler::SecondPass()
 					Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
 					currentLineTokens.pop();
 
-					if ((operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_DECIMAL) &&
-						(operand.GetTokenType() != TokenType::OPERAND_IMMEDIATELY_HEX))
-						throw AssemblerException("Directive '.word' expects decimal or hex operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
+					unsigned long data;
+					if ((operand.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL) || 
+						(operand.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)	)	
+						data = strtoul(operand.GetValue().c_str(), NULL, 0);
+					else if (operand.GetTokenType() == TokenType::SYMBOL)
+					{
+						SymbolTableEntry* entry = symbolTable.GetEntryByName(operand.GetValue());
 
-					unsigned long data = strtoul(operand.GetValue().c_str(), NULL, 0);
+						relocationTable.InsertRelocation(currentSectionNo,
+							entry->entryNo, 
+							locationCounter, 
+							RelocationType::R_386_16);
+
+						if (entry)
+							data = entry->offset;
+						else
+							throw AssemblerException("Symbol '" + entry->name + "' not found.", ErrorCodes::SYMBOL_NOT_FOUND, lineNumber);
+					}
 
 					if (data > 0xFFFF)
 						cout << "Warning at line " << lineNumber << ": directive should be provided with a word, but value provided is bigger than 0xFFFF. Least significant sixteen bits will be used." << endl;

@@ -1,20 +1,34 @@
 #include "emulator.h"
 
-void Emulator::InitializeCPU()
+Emulator::~Emulator()
 {
-	processor.memory = executable->memory;
-	processor.sp = 0xFFFF;
-	processor.pc = executable->initialPC;
+	delete executable;
 }
 
-void Emulator::Run()
+inline void Emulator::InitializeCPU()
 {
-	InitializeCPU();
+	processor.executable = this->executable;
 
+	processor.pc = processor.memory_read_16(0);
+	Run();
+	// initial stack pointer is set by initialization code 
+	// processor.sp = 0xFFFF;
+	processor.pc = executable->initialPC;
+	processor.halted = false;
+}
+
+inline void Emulator::Run()
+{
 	while (!processor.halted)
 	{
 		processor.InstructionFetchAndDecode();
 		processor.InstructionExecute();
 		processor.InstructionHandleInterrupt();
 	}
+}
+
+void Emulator::Start()
+{
+	InitializeCPU();
+	Run();
 }

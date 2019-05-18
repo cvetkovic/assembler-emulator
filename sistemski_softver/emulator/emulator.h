@@ -12,12 +12,14 @@ private:
 	CPU processor;
 	Executable* executable;
 
-	void InitializeCPU();
+	inline void InitializeCPU();
+	inline void Run();
 
 public:
 	Emulator(Executable* executable) : executable(executable) {}
+	~Emulator();
 
-	void Run();
+	void Start();
 };
 
 #endif

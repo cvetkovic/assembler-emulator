@@ -73,7 +73,7 @@
     <None Include="examples\example13.asm">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="examples\example14.asm">
+    <None Include="examples\interrupts.asm">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

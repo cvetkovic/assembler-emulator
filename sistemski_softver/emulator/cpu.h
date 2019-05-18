@@ -6,6 +6,9 @@
 #include <mutex>
 #include <thread>
 #include "../common/structures.h"
+#include "executable.h"
+#include "interrupt.h"
+#include "linker.h"
 
 #define FLAG_Z	0x0001
 #define FLAG_O	0x0002
@@ -14,6 +17,9 @@
 #define FLAG_I	0x8000
 #define FLAG_Tl 0x4000
 #define FLAG_Tr 0x2000
+
+#define TERMINAL_DATA_OUT 0xFF00
+#define TERMINAL_DATA_IN  0xFF02
 
 // DO NOT CHANGE THE ORDER HERE
 enum InstructionMnemonic
@@ -82,14 +88,18 @@ private:
 	// state of processor
 	bool halted;
 
-	// pointer to executable memory
-	uint8_t* memory;
+	Executable* executable;
 
+	// memory access methods
+	inline const uint8_t& memory_read(const uint16_t& address) { return executable->MemoryRead(address); }
+	const uint16_t memory_read_16(const uint16_t& address);
+	inline void memory_write(const uint16_t& address, const uint8_t& data) { executable->MemoryWrite(address, data, false); }
+	
 	// r0-r7 registers
 	uint16_t registerFile[8];
 	// pointer to registerFile[6]
 	uint16_t& sp = registerFile[6];
-	// pointer to registerFile76]
+	// pointer to registerFile[7]
 	uint16_t& pc = registerFile[7];
 	// r15
 	uint16_t psw;
@@ -97,6 +107,9 @@ private:
 	InstructionMnemonic instructionMnemonic;
 	OperandSize operandSize;
 	
+	// for checking if instruction is in executable section
+	uint16_t pcBeforeInstruction = 0;
+
 	AddressingType operand1AddressingType;
 	ByteSelector operand1ByteSelector;
 	uint16_t operand1;
@@ -114,21 +127,26 @@ private:
 	void InstructionExecute();
 	void InstructionHandleInterrupt();
 
-	inline void memory_push(const uint8_t& data) { memory[--sp] = data; }
+	inline void memory_push(const uint8_t& data) 
+	{ 
+		if (sp > MEMORY_MAPPED_REGISTERS_START)
+			throw EmulatorException("Stack underflow.", ErrorCodes::EMULATOR_STACK_UNDERFLOW);
+
+		memory_write(--sp, data); 
+	}
 	inline void memory_push_16(const uint16_t& data) { memory_push((data >> 8) & 0xFF); memory_push(data & 0xFF); }
-	inline uint8_t memory_pop() { return memory[sp++]; }
+	inline uint8_t memory_pop() { return memory_read(sp++); }
 	inline uint16_t memory_pop_16() { uint16_t r = memory_pop(); r = r | (memory_pop() << 8); return r; }
 
-	LazyFlagHolder lazyFlag;
-	void MemorizeLazyFlags(uint8_t flags, uint16_t result, uint16_t dst, bool srcSet, uint16_t src);
+	inline void SetFlagsZN(uint8_t flags, int16_t result);
+	inline void SetFlagO(int16_t src, int16_t dst, int16_t r, InstructionMnemonic operation);
+	inline void SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemonic operation);
 
 	// interrupts
 	mutex emulatorStatusMutex;
 	mutex memoryMutex;
 
-	void KeyboardInterruptRoutine();
-
-public:
+	thread* keyboardThread;
 
 	inline bool GetZ() { return psw & FLAG_Z; }
 	inline bool GetO() { return psw & FLAG_O; }
@@ -137,6 +155,17 @@ public:
 	inline bool GetTr() { return psw & FLAG_Tr; }
 	inline bool GetTl() { return psw & FLAG_Tl; }
 	inline bool GetI() { return psw & FLAG_I; }
+
+
+public:
+	CPU();
+	~CPU();
+
+	inline thread& GetKeyboardThread() { return *keyboardThread; }
+	inline mutex& GetEmulatorStatusMutex() { return emulatorStatusMutex; }
+	inline mutex& GetMemoryMutex() { return memoryMutex; }
+	inline const bool& GetHaltedStatus() { return halted; }
+	void WriteIO(const uint16_t& address, const uint8_t& data);
 
 	friend class Emulator;
 };

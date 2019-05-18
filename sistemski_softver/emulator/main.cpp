@@ -43,9 +43,9 @@ int main(int argc, char** argv)
 			Linker linker(inputFiles, sections);
 			Executable* executable = linker.GetExecutable();
 			cout << "Object files have been linked successfully." << endl;
-
+			
 			Emulator emulator(executable);
-			emulator.Run();
+			emulator.Start();
 			cout << "Program has been successfully completed." << endl;
 		}
 		catch (const LinkerException& ex)

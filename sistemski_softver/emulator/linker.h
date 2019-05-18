@@ -12,7 +12,11 @@ using namespace std;
 
 #define START_SYMBOL "_start"
 
-typedef map<string, uint16_t> LinkerSections;
+#define IVT_START 0x0000
+#define IVT_LENGTH 8
+#define IVT_SECTION_NAME "iv_table"
+#define MEMORY_MAPPED_REGISTERS_START 0xFF00
+#define MEMORY_MAPPED_REGISTERS_END   0xFFFF
 
 class ObjectFile
 {
