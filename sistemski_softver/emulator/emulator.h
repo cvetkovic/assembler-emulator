@@ -4,6 +4,8 @@
 #include "cpu.h"
 #include "executable.h"
 #include "linker.h"
+#include <thread>
+using namespace std;
 
 class Emulator
 {

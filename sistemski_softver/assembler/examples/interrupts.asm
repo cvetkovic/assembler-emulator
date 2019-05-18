@@ -23,7 +23,9 @@ mov r2, 0
 mov r3, 0
 mov r4, 0
 mov r5, 0
-mov r6, 0xFF00
+mov r6, 0xFF00		# initial stack pointer
+mov *0xFF00, 0		# data_out - for displaying characters
+mov *0xFF10, 0		# timer_cfg
 halt
 
 ivt_entry1:

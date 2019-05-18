@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include "../common/structures.h"
 #include "executable.h"
@@ -20,6 +21,7 @@
 
 #define TERMINAL_DATA_OUT 0xFF00
 #define TERMINAL_DATA_IN  0xFF02
+#define TIMER_CFG 0xFF10
 
 // DO NOT CHANGE THE ORDER HERE
 enum InstructionMnemonic
@@ -87,13 +89,9 @@ class CPU
 private:
 	// state of processor
 	bool halted;
+	bool initializationFinished;
 
 	Executable* executable;
-
-	// memory access methods
-	inline const uint8_t& memory_read(const uint16_t& address) { return executable->MemoryRead(address); }
-	const uint16_t memory_read_16(const uint16_t& address);
-	inline void memory_write(const uint16_t& address, const uint8_t& data) { executable->MemoryWrite(address, data, false); }
 	
 	// r0-r7 registers
 	uint16_t registerFile[8];
@@ -145,8 +143,9 @@ private:
 	// interrupts
 	mutex emulatorStatusMutex;
 	mutex memoryMutex;
-
+	priority_queue <InterruptType, vector<InterruptType>, less<InterruptType>> interruptRequests;
 	thread* keyboardThread;
+	thread* timerThread;
 
 	inline bool GetZ() { return psw & FLAG_Z; }
 	inline bool GetO() { return psw & FLAG_O; }
@@ -158,14 +157,22 @@ private:
 
 
 public:
-	CPU();
 	~CPU();
-
+	
+	void StartThreads();
 	inline thread& GetKeyboardThread() { return *keyboardThread; }
 	inline mutex& GetEmulatorStatusMutex() { return emulatorStatusMutex; }
 	inline mutex& GetMemoryMutex() { return memoryMutex; }
 	inline const bool& GetHaltedStatus() { return halted; }
+
 	void WriteIO(const uint16_t& address, const uint8_t& data);
+	void SetInterrupt(const InterruptType& type);
+	bool GetInitializationFinished() { return initializationFinished; }
+
+	// memory access methods
+	inline const uint8_t& memory_read(const uint16_t& address) { return executable->MemoryRead(address); }
+	const uint16_t memory_read_16(const uint16_t& address);
+	inline void memory_write(const uint16_t& address, const uint8_t& data) { executable->MemoryWrite(address, data, false); }
 
 	friend class Emulator;
 };

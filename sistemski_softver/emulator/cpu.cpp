@@ -9,6 +9,9 @@ const uint16_t CPU::memory_read_16(const uint16_t & address)
 
 void CPU::ResolveAddressing(uint8_t rawData, Operand op)
 {
+	if (interruptRequests.size() != 0 && interruptRequests.top() == InterruptType::INT_INVALID_INSTRUCTION)
+		return;
+
 	uint16_t& operand = (op == Operand::FIRST_OPERAND ? operand1 : operand2);
 	ByteSelector& byteSelector = (op == Operand::FIRST_OPERAND ? operand1ByteSelector : operand2ByteSelector);
 	uint8_t& registerSelector = (op == Operand::FIRST_OPERAND ? registerSelector1 : registerSelector2);
@@ -57,7 +60,9 @@ void CPU::ResolveAddressing(uint8_t rawData, Operand op)
 		break;
 	}
 	default:
-		throw EmulatorException("Unknown addressing type.", ErrorCodes::EMULATOR_UNKNOWN_ADDRESSING);
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		break;
+		//throw EmulatorException("Unknown addressing type.", ErrorCodes::EMULATOR_UNKNOWN_ADDRESSING);
 	}
 
 	if (op == Operand::FIRST_OPERAND)
@@ -78,7 +83,8 @@ uint16_t& CPU::GetReference(Operand op)
 	case AddressingType::IMMEDIATELY:
 	{
 		if (op == FIRST_OPERAND && cpuInstructionsMap.at(instructionMnemonic).numberOfOperands == 2)
-			throw EmulatorException("Immediately addressed operand cannot be destination.");
+			SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+			//throw EmulatorException("Immediately addressed operand cannot be destination.");
 
 		return operand;
 	}
@@ -93,8 +99,11 @@ uint16_t& CPU::GetReference(Operand op)
 	case AddressingType::MEMORY_DIRECT:
 		return (uint16_t&)memory_read(operand);
 	default:
-		throw EmulatorException("Unknown addressing type.", ErrorCodes::EMULATOR_UNKNOWN_ADDRESSING);
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		break;
 	}
+
+	throw EmulatorException("Unknown addressing type.", ErrorCodes::EMULATOR_UNKNOWN_ADDRESSING);
 }
 
 void CPU::InstructionFetchAndDecode()
@@ -112,7 +121,8 @@ void CPU::InstructionFetchAndDecode()
 		operandSize = static_cast<OperandSize>(size);
 	}
 	else
-		throw EmulatorException("Unknown operation code detected.", ErrorCodes::EMULATOR_UNKNOWN_INSTRUCTION);
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		//throw EmulatorException("Unknown operation code detected.", ErrorCodes::EMULATOR_UNKNOWN_INSTRUCTION);
 
 	InstructionDetails& details = cpuInstructionsMap.at(instructionMnemonic);
 
@@ -138,7 +148,9 @@ void CPU::InstructionFetchAndDecode()
 		break;
 	}
 	default:
-		throw EmulatorException("Unknown instruction addressing field.", ErrorCodes::EMULATOR_UNKNOWN_INSTRUCTION);
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		break;
+		//throw EmulatorException("Unknown instruction addressing field.", ErrorCodes::EMULATOR_UNKNOWN_INSTRUCTION);
 	}
 }
 
@@ -147,6 +159,9 @@ void CPU::InstructionExecute()
 	if (!executable->CheckIfExecutable(pcBeforeInstruction, pc - pcBeforeInstruction))
 		EmulatorException("Loaded code is not in executable section. Emulation aborted.", ErrorCodes::EMULATOR_NON_EXECUTABLE_SECTION);
 	
+	if (interruptRequests.size() != 0 && interruptRequests.top() == InterruptType::INT_INVALID_INSTRUCTION)
+		return;
+
 	switch (instructionMnemonic)
 	{
 	case InstructionMnemonic::HALT:
@@ -347,12 +362,48 @@ void CPU::InstructionExecute()
 		break;
 	}
 	default:
-		throw EmulatorException("Unknown instruction.", ErrorCodes::EMULATOR_UNKNOWN_INSTRUCTION);
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		break;
+		//throw EmulatorException("Unknown instruction.", ErrorCodes::EMULATOR_UNKNOWN_INSTRUCTION);
 	}
 }
 
 void CPU::InstructionHandleInterrupt()
 {
+	char c;
+	memoryMutex.lock();
+	if (c = (char)memory_read(TERMINAL_DATA_OUT) != 0)
+	{
+		memory_write(TERMINAL_DATA_OUT, 0);
+
+		cout << c;
+		cout.flush();
+	}
+	memoryMutex.unlock();
+
+	emulatorStatusMutex.lock();
+	if (interruptRequests.size() == 0)
+	{
+		emulatorStatusMutex.unlock();
+		return;
+	}
+	InterruptType itype = interruptRequests.top();
+	// INT_INVALID_INSTRUCTION is non-maskable interrupt
+	if (((itype != InterruptType::INT_INVALID_INSTRUCTION) && (!(psw & FLAG_I))) ||
+		((itype == InterruptType::KEYBOARD) && (psw & FLAG_Tl)) ||
+		((itype == InterruptType::TIMER) && (psw & FLAG_Tr)))
+	{
+		emulatorStatusMutex.unlock();
+		return;
+	}
+	interruptRequests.pop();
+	emulatorStatusMutex.unlock();
+	
+	memory_push_16(pc);
+	memory_push_16(psw);
+
+	psw = psw & !FLAG_I;
+	pc = memory_read_16(IVT_START + 2 * (uint16_t)itype);
 }
 
 inline void CPU::SetFlagsZN(uint8_t flags, int16_t result)
@@ -421,13 +472,16 @@ inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 	}
 }
 
-CPU::CPU()
+void CPU::StartThreads()
 {
 	keyboardThread = new thread(KeyboardHandler, this);
+	timerThread = new thread(TimerHandler, this);
 }
 
 CPU::~CPU()
 {
+	timerThread->join();
+	cout << "Press ENTER key to end..." << endl;
 	keyboardThread->join();
 	delete keyboardThread;
 }
@@ -435,7 +489,19 @@ CPU::~CPU()
 void CPU::WriteIO(const uint16_t & address, const uint8_t & data)
 {
 	if (data >= MEMORY_MAPPED_REGISTERS_START && data <= MEMORY_MAPPED_REGISTERS_END)
+	{
+		memoryMutex.lock();
 		memory_write(address, data);
+		memoryMutex.unlock();
+	}
 	else
-		throw EmulatorException("Cannot write with this method outisde of I/O space.");
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		//throw EmulatorException("Cannot write with this method outside of I/O space.");
+}
+
+void CPU::SetInterrupt(const InterruptType & type)
+{
+	emulatorStatusMutex.lock();
+	interruptRequests.push(type);
+	emulatorStatusMutex.unlock();
 }

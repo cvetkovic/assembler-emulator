@@ -11,10 +11,12 @@ inline void Emulator::InitializeCPU()
 
 	processor.pc = processor.memory_read_16(0);
 	Run();
-	// initial stack pointer is set by initialization code 
+	// initial stack pointer is set by interrupt vector #0
 	// processor.sp = 0xFFFF;
 	processor.pc = executable->initialPC;
+	processor.initializationFinished = true;
 	processor.halted = false;
+	processor.StartThreads();
 }
 
 inline void Emulator::Run()

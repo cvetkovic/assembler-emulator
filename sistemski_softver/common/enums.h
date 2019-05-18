@@ -53,4 +53,12 @@ enum ByteSelector
 	HIGHER = 1,
 };
 
+enum InterruptType : int
+{
+	RESET = 0,
+	INT_INVALID_INSTRUCTION = 1,
+	TIMER = 2,
+	KEYBOARD = 3
+};
+
 #endif
