@@ -33,11 +33,16 @@ bool Executable::CheckIfExecutable(uint16_t initialPC, uint16_t length)
 	LinkerSections::const_iterator it;
 	for (it = sectionStartMap.begin(); it != sectionStartMap.end(); it++)
 	{
-		const SectionTableEntry& entry = *sectionTable.GetEntryByName(it->first);
+		if (sectionTable.GetEntryByName(it->first))
+		{
+			const SectionTableEntry& entry = *sectionTable.GetEntryByName(it->first);
 
-		if (((it->second <= initialPC) && (initialPC + length < it->second + (uint16_t)entry.length)) && 
-			((entry.flags & FLAG_EXECUTABLE) == 0))
-			return false;
+			if (((it->second <= initialPC) && (initialPC + length < it->second + (uint16_t)entry.length)) &&
+				((entry.flags & FLAG_EXECUTABLE) == 0))
+				return false;
+		}
+		else
+			throw EmulatorException("Section '" + it->first + "' not found in provided files.", ErrorCodes::EMULATOR_SECTION_MISSING);
 	}
 
 	return true;

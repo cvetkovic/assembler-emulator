@@ -52,7 +52,7 @@ mov *0xFF00, 107	# k
 mov *0xFF00, 101	# e
 mov *0xFF00, 100	# d
 mov *0xFF00, 033	# !
-mov *0xFF00, 013	# [\n]
+mov *0xFF00, 010	# [\n]
 halt
 
 # timer interrupt routine

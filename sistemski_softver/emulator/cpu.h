@@ -62,7 +62,7 @@ static map<InstructionMnemonic, InstructionDetails> cpuInstructionsMap = {
 		{NOT, InstructionDetails(1, 10)},
 		{PUSH, InstructionDetails(1, 17)},
 		{POP, InstructionDetails(1, 18)},
-		{JMP, InstructionDetails(1, 19, true)},
+		{JMP, InstructionDetails(1, 19)},
 		{JEQ, InstructionDetails(1, 20, true)},
 		{JNE, InstructionDetails(1, 21, true)},
 		{JGT, InstructionDetails(1, 22, true)},
@@ -119,7 +119,8 @@ private:
 	uint8_t registerSelector2;
 
 	void ResolveAddressing(uint8_t rawData, Operand op);
-	uint16_t& GetReference(Operand op);
+	uint16_t& GetReference16(Operand op);
+	uint8_t& GetReference8(Operand op);
 
 	void InstructionFetchAndDecode();
 	void InstructionExecute();

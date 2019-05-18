@@ -76,6 +76,21 @@
     <None Include="examples\infinite_loop.asm">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="examples\example13.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example14.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example15.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example16.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example17.asm">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\legend.txt">

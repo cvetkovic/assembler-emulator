@@ -46,7 +46,6 @@ int main(int argc, char** argv)
 			
 			Emulator emulator(executable);
 			emulator.Start();
-			cout << "Program has been successfully completed." << endl;
 		}
 		catch (const LinkerException& ex)
 		{

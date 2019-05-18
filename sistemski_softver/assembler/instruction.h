@@ -18,11 +18,11 @@ static map<string, InstructionDetails> instructionOperandMap = {
 		{"not", InstructionDetails(1, 10)},
 		{"push", InstructionDetails(1, 17)},
 		{"pop", InstructionDetails(1, 18)},
-		{"jmp", InstructionDetails(1, 19, true)},
+		{"jmp", InstructionDetails(1, 19)},			// absolute jumps -> false because of R_386_16
 		{"jeq", InstructionDetails(1, 20, true)},
 		{"jne", InstructionDetails(1, 21, true)},
 		{"jgt", InstructionDetails(1, 22, true)},
-		{"call", InstructionDetails(1, 23, true)},
+		{"call", InstructionDetails(1, 23)},		// absolute jumps -> false because of R_386_16
 
 		{"xchg", InstructionDetails(2, 2)},
 		{"mov", InstructionDetails(2, 4)},

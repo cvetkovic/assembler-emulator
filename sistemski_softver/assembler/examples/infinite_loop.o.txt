@@ -1,5 +1,5 @@
 <!-- section '.text' -->
-24 20 00 cd ab 9c a0 fe ff 
+24 20 00 cd ab 9c a0 00 00 
 
 <!-- symbol table -->
 Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
@@ -12,4 +12,4 @@ Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumb
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 
-0              1              7              1              
+0              1              7              0              

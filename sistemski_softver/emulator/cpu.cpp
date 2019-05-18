@@ -71,7 +71,45 @@ void CPU::ResolveAddressing(uint8_t rawData, Operand op)
 		operand2AddressingType = addressingType;
 }
 
-uint16_t& CPU::GetReference(Operand op)
+uint8_t& CPU::GetReference8(Operand op)
+{
+	AddressingType& addressingType = (op == Operand::FIRST_OPERAND ? operand1AddressingType : operand2AddressingType);
+	ByteSelector& byteSelector = (op == Operand::FIRST_OPERAND ? operand1ByteSelector : operand2ByteSelector);
+	uint16_t& operand = (op == Operand::FIRST_OPERAND ? operand1 : operand2);
+	uint8_t& registerSelector = (op == Operand::FIRST_OPERAND ? registerSelector1 : registerSelector2);
+	
+	switch (addressingType)
+	{
+	case AddressingType::IMMEDIATELY:
+	{
+		if (op == FIRST_OPERAND && cpuInstructionsMap.at(instructionMnemonic).numberOfOperands == 2)
+			SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		//throw EmulatorException("Immediately addressed operand cannot be destination.");
+
+		return (uint8_t&)operand;
+	}
+	case AddressingType::REGISTER_DIRECT:
+		if (byteSelector == ByteSelector::LOWER)
+			return (uint8_t&)registerFile[registerSelector];
+		else
+			return (uint8_t&)*((uint8_t*)&registerFile[registerSelector] + 1);
+	case AddressingType::REGISTER_INDIRECT_NO_OFFSET:
+		return (uint8_t&)memory_read(registerFile[registerSelector]);
+	case AddressingType::REGISTER_INDIRECT_8_BIT_OFFSET:
+		return (uint8_t&)memory_read(registerFile[registerSelector] + (int8_t)(operand & 0xFF));
+	case AddressingType::REGISTER_INDIRECT_16_BIT_OFFSET:
+		return (uint8_t&)memory_read(registerFile[registerSelector] + (int16_t)operand);
+	case AddressingType::MEMORY_DIRECT:
+		return *((uint8_t*)(&memory_read(operand)));
+	default:
+		SetInterrupt(InterruptType::INT_INVALID_INSTRUCTION);
+		break;
+	}
+
+	throw EmulatorException("Unknown addressing type.", ErrorCodes::EMULATOR_UNKNOWN_ADDRESSING);
+}
+
+uint16_t& CPU::GetReference16(Operand op)
 {
 	AddressingType& addressingType = (op == Operand::FIRST_OPERAND ? operand1AddressingType : operand2AddressingType);
 	ByteSelector& byteSelector = (op == Operand::FIRST_OPERAND ? operand1ByteSelector : operand2ByteSelector);
@@ -79,7 +117,9 @@ uint16_t& CPU::GetReference(Operand op)
 	uint8_t& registerSelector = (op == Operand::FIRST_OPERAND ? registerSelector1 : registerSelector2);
 
 	// operand is already in operand reference if jump instruction
-	if (cpuInstructionsMap.at(instructionMnemonic).jumpInstruction)
+	if (cpuInstructionsMap.at(instructionMnemonic).jumpInstruction || 
+		instructionMnemonic == InstructionMnemonic::JMP ||
+		instructionMnemonic == InstructionMnemonic::CALL)
 		return operand;
 
 	switch (addressingType)
@@ -166,6 +206,7 @@ void CPU::InstructionExecute()
 	if (interruptRequests.size() != 0 && interruptRequests.top() == InterruptType::INT_INVALID_INSTRUCTION)
 		return;
 
+	// debug condition: initializationFinished && instructionMnemonic != InstructionMnemonic::IRET
 	switch (instructionMnemonic)
 	{
 	case InstructionMnemonic::HALT:
@@ -175,181 +216,341 @@ void CPU::InstructionExecute()
 	}
 	case InstructionMnemonic::XCHG:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		uint16_t temp = dst;
-		dst = src;
-		src = temp;
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			uint16_t temp = dst;
+			dst = src;
+			src = temp;
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			uint8_t temp = dst;
+			dst = src;
+			src = temp;
+		}
 		break;
 	}
 	case InstructionMnemonic::INT:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 
 		memory_push_16(psw);
 		pc = memory_read((dst % 8) << 1);
+		// TODO: check this
+		psw = psw & (~(int16_t)FLAG_I);
 
 		break;
 	}
 	case InstructionMnemonic::MOV:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		dst = src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			dst = src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			dst = src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::ADD:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		SetFlagO(src, dst, dst + src, InstructionMnemonic::ADD);
-		SetFlagC(src, dst, dst + src, InstructionMnemonic::ADD);
-		dst += src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			SetFlagO(src, dst, dst + src, InstructionMnemonic::ADD);
+			SetFlagC(src, dst, dst + src, InstructionMnemonic::ADD);
+			dst += src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			SetFlagO(src, dst, dst + src, InstructionMnemonic::ADD);
+			SetFlagC(src, dst, dst + src, InstructionMnemonic::ADD);
+			dst += src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::SUB:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		SetFlagO(src, dst, dst - src, InstructionMnemonic::SUB);
-		SetFlagC(src, dst, dst - src, InstructionMnemonic::SUB);
-		dst -= src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			SetFlagO(src, dst, dst - src, InstructionMnemonic::SUB);
+			SetFlagC(src, dst, dst - src, InstructionMnemonic::SUB);
+			dst -= src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			SetFlagO(src, dst, dst - src, InstructionMnemonic::SUB);
+			SetFlagC(src, dst, dst - src, InstructionMnemonic::SUB);
+			dst -= src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::MUL:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		dst *= src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			dst *= src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			dst *= src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::DIV:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		dst /= src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			dst /= src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			dst /= src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::CMP:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		uint16_t temp = dst - src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)temp);
-		SetFlagO(src, dst, temp, InstructionMnemonic::CMP);
-		SetFlagC(src, dst, temp, InstructionMnemonic::CMP);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			uint16_t temp = dst - src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)temp);
+			SetFlagO(src, dst, temp, InstructionMnemonic::CMP);
+			SetFlagC(src, dst, temp, InstructionMnemonic::CMP);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			uint8_t temp = dst - src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)temp);
+			SetFlagO(src, dst, temp, InstructionMnemonic::CMP);
+			SetFlagC(src, dst, temp, InstructionMnemonic::CMP);
+		}
 		break;
 	}
 	case InstructionMnemonic::NOT:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		dst = !dst;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			dst = ~dst;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			dst = ~dst;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::AND:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		dst = dst & src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			dst = dst & src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			dst = dst & src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::OR:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		dst = dst | src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			dst = dst | src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			dst = dst | src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::XOR:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		dst = dst ^ src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			dst = dst ^ src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			dst = dst ^ src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::TEST:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		uint16_t temp = dst & src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)temp);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			uint16_t temp = dst & src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)temp);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			uint8_t temp = dst & src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)temp);
+		}
 		break;
 	}
 	case InstructionMnemonic::SHL:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		SetFlagC(src, dst, dst << src, InstructionMnemonic::CMP);
-		dst = dst << src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			SetFlagC(src, dst, dst << src, InstructionMnemonic::CMP);
+			dst = dst << src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			SetFlagC(src, dst, dst << src, InstructionMnemonic::CMP);
+			dst = dst << src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::SHR:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		uint16_t& src = GetReference(Operand::SECOND_OPERAND);
-		SetFlagC(src, dst, dst >> src, InstructionMnemonic::CMP);
-		dst = dst >> src;
-		SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+			uint16_t& src = GetReference16(Operand::SECOND_OPERAND);
+			SetFlagC(src, dst, dst >> src, InstructionMnemonic::CMP);
+			dst = dst >> src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int16_t)dst);
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			uint8_t& src = GetReference8(Operand::SECOND_OPERAND);
+			SetFlagC(src, dst, dst >> src, InstructionMnemonic::CMP);
+			dst = dst >> src;
+			SetFlagsZN(FLAG_Z | FLAG_N, (int8_t)dst);
+		}
 		break;
 	}
 	case InstructionMnemonic::PUSH:
 	{
-		uint16_t& src = GetReference(Operand::FIRST_OPERAND);
-		if (operandSize == OperandSize::BYTE)
-			memory_push(src & 0xFF);
-		else
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& src = GetReference16(Operand::FIRST_OPERAND);
 			memory_push_16(src);
+		}
+		else
+		{
+			uint8_t& src = GetReference8(Operand::FIRST_OPERAND);
+			memory_push(src);
+		}
 		break;
 	}
 	case InstructionMnemonic::POP:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		if (operandSize == OperandSize::BYTE)
-			dst = memory_pop();
-		else
+		if (operandSize == OperandSize::WORD)
+		{
+			uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 			dst = memory_pop_16();
+		}
+		else
+		{
+			uint8_t& dst = GetReference8(Operand::FIRST_OPERAND);
+			dst = memory_pop();
+		}
 		break;
 	}
 	case InstructionMnemonic::JMP:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		pc += (int16_t)dst;
+		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+		pc = (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::JEQ:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 		if (GetZ())
-			pc = dst;
+			pc += (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::JNE:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 		if (!GetZ())
-			pc = dst;
+			pc += (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::JGT:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
-		if (GetZ() && (GetO() == !GetN()))	// ZERO=0 && (OVERFLOW=SIGNED)
-			pc = dst;
+		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
+		if ((GetN() ^ GetO()) == 0)	// 1. ort2.kol2 -> N xor V; 2. x86 ->ZERO=0 && (OVERFLOW=SIGNED)
+			pc += (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::CALL:
 	{
-		uint16_t& dst = GetReference(Operand::FIRST_OPERAND);
+		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 		memory_push_16(pc);
 		pc = dst;
 		break;
@@ -381,7 +582,6 @@ void CPU::InstructionHandleInterrupt()
 		memory_write(TERMINAL_DATA_OUT, 0);
 
 		cout << c;
-		cout.flush();
 	}
 	memoryMutex.unlock();
 
@@ -484,10 +684,18 @@ void CPU::StartThreads()
 
 CPU::~CPU()
 {
-	timerThread->join();
-	cout << "Press ENTER key to end..." << endl;
-	keyboardThread->join();
-	delete keyboardThread;
+	// IF needed because of exception throwing could cause crash
+	if (timerThread)
+	{
+		timerThread->join();
+		delete timerThread;
+	}
+	if (keyboardThread)
+	{
+		cout << "Press ENTER key to end..." << endl;
+		keyboardThread->join();
+		delete keyboardThread;
+	}
 }
 
 void CPU::WriteIO(const uint16_t & address, const uint8_t & data)

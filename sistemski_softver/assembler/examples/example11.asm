@@ -1,63 +1,34 @@
-.global a, c
-.extern
-.text
-
-jz a
-jz e
-jz b
-jz d
-
-d: 
-.long d
-mov eax, b
-mov c, eax
-mov eax, e
-
 .data
-.skip 8
-e: 
-.long a-e+d
-.long c
-.long .bss
-a:
-.long b
-
-.bss
-c:
-.skip 8
-
-.end
-
-.global test_label
-
-.section .data
-msg: .byte 1
-.skip 4
-.word 2
-.equ EQU, 0xff
+memorijsko:
+.word 0xabcd
+memorijsko2:
+.word 0xbcde
+.word 0xcdef
 
 .text
-.global  main
+.global _start
 
+_start:
+mov r0, 1
+mov r1, r0
+mov r2, memorijsko
+mov r3, &memorijsko
+mov r4, r3[2]
+mov r3, &memorijsko2
+mov r5, r3[-2]
 
+add r0, r1
+sub r0, r2
+mul r0, r1
+div r0, 5
+cmp r0, r0
+and r1, 5
+or r2, 0xffff
+xor r2, r2
+test r0, r1
+shl r2, 2
+shr r2, 1
+push r0
+pop r1
 
-
-
-
-
-main:
-push ebp
-mov   	ebp, esp
-push   ebp
-.align 4
-mov   	ebp, esp
-push   ebp
-mov   	ebp, esp
-push   ebp
-mov   	ebp, esp
-
-skip:
-mov    eax, 0
-mov    esp, ebp
-pop    ebp
-ret
+halt
