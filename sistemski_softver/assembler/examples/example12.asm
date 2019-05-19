@@ -1,14 +1,18 @@
 .data
 
 .text
+
 .global _start
-.extern greater_equal
-.extern not_equal
-.extern equal
 
 _start:
+mov r1, 5
+mov r2, 6
+xchg r1, r2
+not r1
+jmp kraj
 
-mov r0, 5
-cmp r0, 5
-jeq equal
-halt
+add r1, r2
+sub r2, r3
+
+kraj:
+int 1

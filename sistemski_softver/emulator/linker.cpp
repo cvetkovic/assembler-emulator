@@ -208,6 +208,16 @@ void Linker::DeleteLocalSymbols()
 		executable->symbolTable.DeleteSymbol(v.at((SymbolTableID)i));
 }
 
+void Linker::CheckForNotProvidedFiles()
+{
+	LinkerSections::const_iterator it;
+	for (it = sectionStartMap.begin(); it != sectionStartMap.end(); it++)
+	{
+		if (!executable->sectionTable.GetEntryByName(it->first))
+			throw LinkerException("Section '" + it->first + "' is missing from provided object files to be linked.", ErrorCodes::LINKER_SECTION_MISSING);
+	}
+}
+
 Linker::~Linker()
 {
 	for (size_t i = 0; i < numberOfFiles; i++)
@@ -221,6 +231,7 @@ Executable* Linker::GetExecutable()
 	ResolveRelocations();
 	ResolveStartSymbol();
 	DeleteLocalSymbols();
+	CheckForNotProvidedFiles();
 
 	return executable;
 }

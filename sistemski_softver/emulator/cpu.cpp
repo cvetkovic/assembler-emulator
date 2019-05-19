@@ -240,7 +240,6 @@ void CPU::InstructionExecute()
 
 		memory_push_16(psw);
 		pc = memory_read((dst % 8) << 1);
-		// TODO: check this
 		psw = psw & (~(int16_t)FLAG_I);
 
 		break;
@@ -637,7 +636,7 @@ inline void CPU::SetFlagO(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 	}
 	case InstructionMnemonic::SUB:
 	{
-		// TODO: check this
+		// PSWC i PSWV - by Hadzic ORT2
 		if ((src >= 0 && dst < 0 && r < 0) || (src < 0 && dst >= 0 && r >= 0))
 			psw = psw | FLAG_O;
 		else
@@ -653,24 +652,38 @@ inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 	{
 	case InstructionMnemonic::ADD:
 	{
-		// TODO: fix this
-		/*if ((r >= 0 && (src1 < 0 || src2 < 0)) || (r < 0 && src1 < 0 && src2 < 0))
+		if ((src >= 0 && dst >= 0) || (src >= 0 && dst < 0 && r < 0) || (src < 0 && dst >= 0 && r < 0))
 			psw = psw | FLAG_C;
 		else
 			psw = psw & (~(int16_t)FLAG_C);
-		break;*/
+		break;
 	}
 	case InstructionMnemonic::SUB:
 	case InstructionMnemonic::CMP:
 	{
+		if ((src >= 0 && dst < 0 && r < 0) || (src >= 0 && dst >= 0 && r >= 0) || (src < 0 && dst >= 0 && r >= 0))
+			psw = psw | FLAG_C;
+		else
+			psw = psw & (~(int16_t)FLAG_C);
 		break;
 	}
 	case InstructionMnemonic::SHL:
-	{
-		break;
-	}
 	case InstructionMnemonic::SHR:
 	{
+		int16_t r = dst;
+		for (int i = 1; i <= src; i++)
+		{
+			if (r < 0)
+				psw = psw | FLAG_C;
+			else
+				psw = psw & (~(int16_t)FLAG_C);
+
+			if (operation == InstructionMnemonic::SHL)
+				r = r << 1;
+			else
+				r = r >> 1;
+		}
+
 		break;
 	}
 	}

@@ -56,6 +56,7 @@ private:
 	void ResolveRelocations();
 	void ResolveStartSymbol();
 	void DeleteLocalSymbols();
+	void CheckForNotProvidedFiles();
 
 public:
 	Linker(vector<string> inputFiles, LinkerSections sectionStart) : sectionStartMap(sectionStart) { Initialize(inputFiles, sectionStart); }

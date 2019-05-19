@@ -502,6 +502,8 @@ void Assembler::SecondPass()
 				{
 					if (symbolTable.GetEntryByName(labelName.GetValue()))
 						symbolTable.GetEntryByName(labelName.GetValue())->scopeType = ScopeType::GLOBAL;
+					else
+						throw AssemblerException("Symbol '" + labelName.GetValue() + "' not found to be declared as global.", ErrorCodes::SYMBOL_NOT_FOUND, lineNumber);
 				}
 				else if (currentToken.GetValue() == EXTERN_MODIFIER)
 				{
