@@ -100,7 +100,8 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 					throw AssemblerException("Symbol '" + operand.GetValue() + "' not found.", ErrorCodes::INVALID_OPERAND, lineNumber);
 				
 				const SymbolTableEntry& entry = *symbolTable.GetEntryByName(operand.GetValue());
-				valueToWrite = GenerateRelocation(instructionMnemonic,
+
+				valueToWrite = GenerateRelocation(RelocationType::R_386_16,
 					entry,
 					locationCounter,
 					writeToPosition,
@@ -168,7 +169,7 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 				if (symbolTable.GetEntryByName(offset.GetValue()))
 				{
 					const SymbolTableEntry& entry = *symbolTable.GetEntryByName(offset.GetValue());
-					valueToWrite = GenerateRelocation(instructionMnemonic,
+					valueToWrite = GenerateRelocation(RelocationType::R_386_16,
 						entry,
 						locationCounter,
 						writeToPosition,
@@ -215,14 +216,30 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 		}
 		case TokenType::OPERAND_PC_RELATIVE_SYMBOL:
 		{
+			// here we need pc relative relocation
+
+			if (!symbolTable.GetEntryByName(operand.GetValue()))
+				throw AssemblerException("Symbol '" + operand.GetValue() + "' not found.", ErrorCodes::SYMBOL_NOT_FOUND, lineNumber);
+
 			operationCode[writeToPosition++] = (4 << 5) | (7 << 1);
 			instructionSize++;
 
-			unsigned long valueToWrite = symbolTable.GetEntryByName(operand.GetValue())->offset;
+			unsigned long valueToWrite = GenerateRelocation(RelocationType::R_386_PC16,
+				*symbolTable.GetEntryByName(operand.GetValue()),
+				writeToPosition,
+				locationCounter,
+				instructionSize,
+				currentSection,
+				symbolTable,
+				relocationTable);
+
+
 			operationCode[writeToPosition++] = (uint8_t)(valueToWrite & 0xFF);
 			operationCode[writeToPosition++] = (uint8_t)((valueToWrite >> 8) & 0xFF);
 
 			instructionSize += 2;
+
+			
 
 			break;
 		}
@@ -245,7 +262,10 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 				if (symbolTable.GetEntryByName(operand.GetValue()))
 				{
 					const SymbolTableEntry& entry = *symbolTable.GetEntryByName(operand.GetValue());
-					valueToWrite = GenerateRelocation(instructionMnemonic,
+					// here we need absolute addressing
+					valueToWrite = 0;
+					
+					GenerateRelocation(RelocationType::R_386_16,
 						entry,
 						locationCounter,
 						writeToPosition,
@@ -289,7 +309,7 @@ Instruction::Instruction(const Token& instruction, queue<Token> params, unsigned
 /* method for determining what to write in instruction argument fields and for
    adding entries to relocation table
 */
-unsigned long Instruction::GenerateRelocation(string instructionMnemonic, 
+unsigned long Instruction::GenerateRelocation(RelocationType relocationType,
 	const SymbolTableEntry& entry, 
 	unsigned long writeToPosition,
 	unsigned long locationCounter,
@@ -298,27 +318,24 @@ unsigned long Instruction::GenerateRelocation(string instructionMnemonic,
 	SymbolTable& symbolTable, 
 	RelocationTable& relocationTable)
 {
-	bool pcRelocation = false;
-	map<string, InstructionDetails>::iterator it = instructionOperandMap.find(instructionMnemonic);
-	if (it->second.jumpInstruction)
-		pcRelocation = true;
-
 	long result = 0;
 
-	if (pcRelocation)	// R_386_PC16
+	if (relocationType == RelocationType::R_386_PC16)	// R_386_PC16
 	{
-		/*if (entry.scopeType == ScopeType::EXTERN)
+		if (entry.scopeType == ScopeType::EXTERN)
 			result = -2; // -2 on 16-bit machine; distance between relocation field and start of the next instruction
 		else	// GLOBAL or LOCAL are both defined in the current file
 		{
 			if (currentSection == entry.sectionNumber)
-				result = entry.offset - locationCounter - 2; // return without relocating wrong
+				return entry.offset - (locationCounter + 4);
+				// NO need for relocation record because of jump to the same section
+				// offset -> address of instruction to which will jump
+				// locationCounter -> start of current instruction
+				// 4 -> length of current instruction
+				// locationCounter + 4 -> address of next instruction
 			else
-				result = entry.offset - 2;
-		}*/
-
-		// TODO: check this
-		result = -2;
+				result = -2;
+		}
 
 		relocationTable.InsertRelocation(currentSection,
 			entry.entryNo,

@@ -11,18 +11,18 @@ using namespace std;
 
 static map<string, InstructionDetails> instructionOperandMap = {
 		{"halt", InstructionDetails(0, 1)},
-		{"ret", InstructionDetails(0, 24, true)},
-		{"iret", InstructionDetails(0, 25, true)},
+		{"ret", InstructionDetails(0, 24)},
+		{"iret", InstructionDetails(0, 25)},
 
-		{"int", InstructionDetails(1, 3, true)},
+		{"int", InstructionDetails(1, 3)},
 		{"not", InstructionDetails(1, 10)},
 		{"push", InstructionDetails(1, 17)},
 		{"pop", InstructionDetails(1, 18)},
-		{"jmp", InstructionDetails(1, 19)},			// absolute jumps -> false because of R_386_16
-		{"jeq", InstructionDetails(1, 20, true)},
-		{"jne", InstructionDetails(1, 21, true)},
-		{"jgt", InstructionDetails(1, 22, true)},
-		{"call", InstructionDetails(1, 23)},		// absolute jumps -> false because of R_386_16
+		{"jmp", InstructionDetails(1, 19)},
+		{"jeq", InstructionDetails(1, 20)},
+		{"jne", InstructionDetails(1, 21)},
+		{"jgt", InstructionDetails(1, 22)},
+		{"call", InstructionDetails(1, 23)},
 
 		{"xchg", InstructionDetails(2, 2)},
 		{"mov", InstructionDetails(2, 4)},
@@ -45,7 +45,8 @@ private:
 	uint8_t operationCode[7] = { 0,0,0,0,0,0,0 };
 	uint8_t instructionSize = 0;
 	
-	unsigned long GenerateRelocation(string instructionMnemonic, const SymbolTableEntry& entry, unsigned long locationCounter, unsigned long writeToPosition, int instructionSize, SectionID currentSection, SymbolTable& symbolTable, RelocationTable& relocationTable);
+	unsigned long GenerateRelocation(RelocationType relocationType, const SymbolTableEntry& entry, unsigned long locationCounter, unsigned long writeToPosition, int instructionSize, SectionID currentSection, SymbolTable& symbolTable, RelocationTable& relocationTable);
+
 
 public:
 	Instruction(const Token& instruction, queue<Token> params, unsigned long lineNumber, unsigned long locationCounter, SectionID currentSection, SymbolTable& symbolTable, RelocationTable& relocationTable);

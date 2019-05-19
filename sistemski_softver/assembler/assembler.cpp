@@ -10,6 +10,8 @@ Assembler::Assembler(string input_file_url, string output_file_url)
 	this->output_file.open(output_file_url, ios::binary | ios::out | ios::trunc);
 	this->txt_output_file.open(output_file_url + ".txt", ios::out | ios::trunc);
 
+	// TODO: create output file if not exists
+
 	if (!input_file.is_open())
 		throw AssemblerException("Cannot open input file.", ErrorCodes::IO_INPUT_EXCEPTION);
 	else if (!output_file.is_open())
@@ -357,6 +359,9 @@ void Assembler::FirstPass()
 			}				
 			else
 			{
+				if (currentLineTokens.size() == 0)
+					throw AssemblerException("Directive '.section' required name of section as a parameter.", ErrorCodes::SYNTAX_LABEL, lineNumber);
+
 				Token userDefinedSection = Token::ParseToken(currentLineTokens.front(), lineNumber);
 				currentLineTokens.pop();
 

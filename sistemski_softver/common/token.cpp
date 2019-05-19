@@ -39,6 +39,9 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 	{
 		data = data.substr(1, data.size() - 1);
 		pcRelativeSymbol = true;
+
+		if (regex_match(data, staticAssemblyParsers[7]) || regex_match(data, staticAssemblyParsers[8]))
+			throw AssemblerException("PC relative addressing not allowed with immediately operands. Use indirect register addressing mode.", ErrorCodes::SYNTAX_ERROR, lineNumber);
 	}
 
 	for (const regex& p : staticAssemblyParsers)

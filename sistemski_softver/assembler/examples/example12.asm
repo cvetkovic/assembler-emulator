@@ -1,18 +1,35 @@
 .data
+n:
+.byte 4
 
 .text
-
 .global _start
 
+# calculating factoriel
 _start:
-mov r1, 5
-mov r2, 6
-xchg r1, r2
-not r1
-jmp kraj
+push n
+call $fact
+pop r3
+halt
 
-add r1, r2
-sub r2, r3
+fact:
+mov r1, sp[2]
+cmp r1, 0
+jne $else
 
-kraj:
-int 1
+then:
+mov r0, 1
+ret
+
+else:
+mov r0, r1
+sub r0, 1
+push r0
+call $fact
+pop r1
+mov r1, sp[2]
+mul r0, r1
+ret
+
+.section sekcija
+halt

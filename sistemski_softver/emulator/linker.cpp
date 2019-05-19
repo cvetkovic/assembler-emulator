@@ -1,5 +1,23 @@
 #include "linker.h"
 
+ObjectFile * Linker::GetObjectFile(const SymbolTableEntry & symbol)
+{
+	for (size_t i = 0; i < numberOfFiles; i++)
+	{
+		ObjectFile& o = *objectFiles[i];
+		SymbolTableEntry* e = o.GetSymbolTable().GetEntryByName(symbol.name);
+		if (e)
+		{
+			return &o;
+		}
+		else
+			continue;
+
+	}
+
+	return 0;
+}
+
 void Linker::Initialize(vector<string>& inputFiles, LinkerSections& sections)
 {
 	if (inputFiles.size() == 0)
@@ -135,6 +153,7 @@ void Linker::ResolveRelocations()
 				SymbolTableEntry& symbol = *executable->symbolTable.GetEntryByName(objectFile.GetSymbolTable().GetEntryByID(entry.symbolNo)->name);
 
 				if (symbol.sectionNumber != entry.sectionNo &&
+					(&objectFile != GetObjectFile(symbol)) &&
 					symbol.scopeType == ScopeType::LOCAL)
 					throw LinkerException("Symbol '" + symbol.name + "' is not marked not marked as global or extern.", ErrorCodes::LINKER_INVALID_RELOCATION_SCOPE);
 

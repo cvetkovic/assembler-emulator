@@ -183,10 +183,10 @@ struct InstructionDetails
 {
 	uint8_t numberOfOperands;
 	uint8_t opCode;
-	bool jumpInstruction;
+	//bool jumpInstruction;
 
-	InstructionDetails(uint8_t numberOfOperands, uint8_t opCode, bool jumpInstruction = false) :
-		numberOfOperands(numberOfOperands), opCode(opCode), jumpInstruction(jumpInstruction) {}
+	InstructionDetails(uint8_t numberOfOperands, uint8_t opCode) :
+		numberOfOperands(numberOfOperands), opCode(opCode) {}
 };
 
 struct LazyFlagHolder

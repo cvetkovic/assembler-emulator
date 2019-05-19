@@ -51,6 +51,8 @@ private:
 
 	const LinkerSections sectionStartMap;
 
+	ObjectFile* GetObjectFile(const SymbolTableEntry& symbol);
+
 	void Initialize(vector<string>& inputFiles, LinkerSections& sections);
 	void MergeAndLoadExecutable();
 	void ResolveRelocations();

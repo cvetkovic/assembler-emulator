@@ -1,22 +1,32 @@
 <!-- section '.data' -->
-
+04 
 
 <!-- section '.text' -->
-24 22 00 05 00 24 24 00 06 00 14 22 24 54 22 9c
-a0 19 00 2c 22 24 34 24 26 1c 00 01 00 
+8c a0 00 00 bc 8e 03 00 94 26 0c 24 22 6c 02 4c
+22 00 00 00 ac 8e 06 00 24 20 00 01 00 c4 24 20
+22 34 20 00 01 00 8c 20 bc 8e df ff 94 22 24 22
+6c 02 3c 20 22 c4 
+
+<!-- section 'sekcija' -->
+0c 
 
 <!-- symbol table -->
 Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
 .data          0              N/A            N/A            1              2              0              
-.text          1              N/A            N/A            1              2              1              
-_start         1              N/A            0              0              1              2              
-kraj           1              N/A            25             1              1              3              
+n              0              N/A            0              1              1              1              
+.text          1              N/A            N/A            1              2              2              
+_start         1              N/A            0              0              1              3              
+fact           1              N/A            11             1              1              4              
+then           1              N/A            24             1              1              5              
+else           1              N/A            30             1              1              6              
+sekcija        2              N/A            N/A            1              2              7              
 
 <!-- section table -->
 Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
-.data          0              00001100       0              0              
-.text          29             00000011       1              1              
+.data          1              00001100       0              0              
+.text          54             00000011       1              2              
+sekcija        1              00001001       2              7              
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 
-1              3              17             0              
+1              1              2              0              

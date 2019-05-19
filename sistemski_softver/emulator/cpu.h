@@ -23,6 +23,8 @@
 #define TERMINAL_DATA_IN  0xFF02
 #define TIMER_CFG 0xFF10
 
+#define PC_REGISTER 7
+
 // DO NOT CHANGE THE ORDER HERE
 enum InstructionMnemonic
 {
@@ -55,18 +57,18 @@ enum InstructionMnemonic
 
 static map<InstructionMnemonic, InstructionDetails> cpuInstructionsMap = {
 		{HALT, InstructionDetails(0, 1)},
-		{RET, InstructionDetails(0, 24, true)},
-		{IRET, InstructionDetails(0, 25, true)},
+		{RET, InstructionDetails(0, 24)},
+		{IRET, InstructionDetails(0, 25)},
 
-		{INT, InstructionDetails(1, 3, true)},
+		{INT, InstructionDetails(1, 3)},
 		{NOT, InstructionDetails(1, 10)},
 		{PUSH, InstructionDetails(1, 17)},
 		{POP, InstructionDetails(1, 18)},
 		{JMP, InstructionDetails(1, 19)},
-		{JEQ, InstructionDetails(1, 20, true)},
-		{JNE, InstructionDetails(1, 21, true)},
-		{JGT, InstructionDetails(1, 22, true)},
-		{CALL, InstructionDetails(1, 23, true)},
+		{JEQ, InstructionDetails(1, 20)},
+		{JNE, InstructionDetails(1, 21)},
+		{JGT, InstructionDetails(1, 22)},
+		{CALL, InstructionDetails(1, 23)},
 
 		{XCHG, InstructionDetails(2, 2)},
 		{MOV, InstructionDetails(2, 4)},

@@ -116,11 +116,18 @@ uint16_t& CPU::GetReference16(Operand op)
 	uint16_t& operand = (op == Operand::FIRST_OPERAND ? operand1 : operand2);
 	uint8_t& registerSelector = (op == Operand::FIRST_OPERAND ? registerSelector1 : registerSelector2);
 
-	// operand is already in operand reference if jump instruction
-	if (cpuInstructionsMap.at(instructionMnemonic).jumpInstruction || 
-		instructionMnemonic == InstructionMnemonic::JMP ||
-		instructionMnemonic == InstructionMnemonic::CALL)
+	switch (instructionMnemonic)
+	{
+	case InstructionMnemonic::JMP:
+	case InstructionMnemonic::JEQ:
+	case InstructionMnemonic::JNE:
+	case InstructionMnemonic::JGT:
+	case InstructionMnemonic::CALL:
+		if (addressingType == AddressingType::REGISTER_INDIRECT_16_BIT_OFFSET && registerSelector == PC_REGISTER)
+			operand += (uint16_t)registerFile[PC_REGISTER];
+
 		return operand;
+	}
 
 	switch (addressingType)
 	{
@@ -530,21 +537,21 @@ void CPU::InstructionExecute()
 	{
 		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 		if (GetZ())
-			pc += (int16_t)dst;
+			pc = (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::JNE:
 	{
 		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 		if (!GetZ())
-			pc += (int16_t)dst;
+			pc = (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::JGT:
 	{
 		uint16_t& dst = GetReference16(Operand::FIRST_OPERAND);
 		if ((GetN() ^ GetO()) == 0)	// 1. ort2.kol2 -> N xor V; 2. x86 ->ZERO=0 && (OVERFLOW=SIGNED)
-			pc += (int16_t)dst;
+			pc = (int16_t)dst;
 		break;
 	}
 	case InstructionMnemonic::CALL:
