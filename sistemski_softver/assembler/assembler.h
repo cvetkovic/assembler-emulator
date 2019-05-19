@@ -21,6 +21,7 @@
 #include "instruction.h"
 #include "../common/structures.h"
 #include "../common/token.h"
+#include "../common/arithmetic.h"
 
 #include <cstdint>
 #include <cmath>
@@ -61,6 +62,8 @@ private:
 	int currentBytesInline = 0;
 	size_t contentLength = 0;
 
+	map<string, vector<Token>> tns;
+
 	void StripeOffCommentsAndLoadLocally();
 	void TokenizeCurrentLine(const string& line, vector<string>& collector);
 	inline void WriteToOutput(uint8_t byte);
@@ -68,6 +71,7 @@ private:
 	inline void WriteToOutput(string text);
 
 	void FirstPass();
+	void ResolveIncalculatableSymbols();
 	void SecondPass();
 
 	void WriteBinaryFile();

@@ -1,7 +1,8 @@
 #ifndef TOKEN_ASSEMBLER_H_
 #define TOKEN_ASSEMBLER_H_
 
-#define NUMBER_OF_PARSERS 12
+#define NUMBER_OF_PARSERS 13
+#define ARITHMETIC_EXPRESSION_DELIMITER "+-*/^()"
 
 #include <regex>
 #include <string>
@@ -21,7 +22,8 @@ static const regex staticAssemblyParsers[NUMBER_OF_PARSERS] = {
 	regex("^[a-zA-Z_][a-zA-Z0-9_]*$"),			// symbol
 												// operand regiter indirect
 	regex("^r[0-9]+\\[(((\\-|\\+){0,1}[0-9]+)|(0x[0-9a-fA-F]{1,})|([a-zA-Z_][a-zA-Z0-9_]*))\\]$"),
-	regex("^\"(?:([bnwdrx])(?!.*\1)){0,6}\"$")	// flags
+	regex("^\"(?:([bnwdrx])(?!.*\1)){0,6}\"$"),	// flags
+	regex("^(\\+|\\-|\\*|\\/|\\^|\\(|\\)){1}$")			// arithmetic operators
 };
 
 class Token
@@ -36,9 +38,11 @@ public:
 	TokenType GetTokenType() const;
 	string GetValue() const;
 
-	static Token ParseToken(string data, unsigned long lineNumber);
+	static Token ParseToken(string data, unsigned long lineNumber, bool recursive = false);
 
 	friend ostream& operator<<(ostream&& out, const Token& token);
+
+	friend class ArithmeticParser;
 };
 
 #endif

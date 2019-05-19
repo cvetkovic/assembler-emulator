@@ -11,6 +11,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 using namespace std;
 
 #define FLAG_BSS		0x20
@@ -187,25 +188,6 @@ struct InstructionDetails
 
 	InstructionDetails(uint8_t numberOfOperands, uint8_t opCode) :
 		numberOfOperands(numberOfOperands), opCode(opCode) {}
-};
-
-struct LazyFlagHolder
-{
-	uint16_t Z_SOURCE;
-	uint16_t Z_DESTINATION;
-	uint16_t Z_RESULT;
-
-	uint16_t O_SOURCE;
-	uint16_t O_DESTINATION;
-	uint16_t O_RESULT;
-
-	uint16_t C_SOURCE;
-	uint16_t C_DESTINATION;
-	uint16_t C_RESULT;
-
-	uint16_t N_SOURCE;
-	uint16_t N_DESTINATION;
-	uint16_t N_RESULT;
 };
 
 #endif

@@ -27,12 +27,18 @@
     <ClInclude Include="token.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="arithmetic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="structures.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="token.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="arithmetic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

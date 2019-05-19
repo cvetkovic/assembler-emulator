@@ -1,35 +1,17 @@
 .data
-n:
-.byte 4
+
+#.global diff
+.equ diff, labela2-labela1 #a + b * ( c - d ) + ( e - f ) * g / h
+
+labela1:
+.word 0xabcd
 
 .text
-.global _start
 
-# calculating factoriel
-_start:
-push n
-call $fact
-pop r3
-halt
+.word 0xffff
+.word 0xbcde
+.word 0xcdef
+labela2:
+.word 0xdef0
 
-fact:
-mov r1, sp[2]
-cmp r1, 0
-jne $else
-
-then:
-mov r0, 1
-ret
-
-else:
-mov r0, r1
-sub r0, 1
-push r0
-call $fact
-pop r1
-mov r1, sp[2]
-mul r0, r1
-ret
-
-.section sekcija
-halt
+.extern a,b,c,d,e,f,g,h

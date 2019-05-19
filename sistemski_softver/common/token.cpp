@@ -10,7 +10,7 @@ string Token::GetValue() const
 	return value;
 }
 
-Token Token::ParseToken(string data, unsigned long lineNumber)
+Token Token::ParseToken(string data, unsigned long lineNumber, bool recursive)
 {
 	if (data.size() == 0)
 		Token(TokenType::INVALID, 0);
@@ -25,7 +25,7 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 	bool memoryDirect = false;
 	bool immediatelySymbol = false;
 	bool pcRelativeSymbol = false;
-	if (data.at(0) == '*')
+	if (data.at(0) == '*' && data.size() != 1) // data size != 0 because of arithmetic parser
 	{
 		data = data.substr(1, data.size() - 1);
 		memoryDirect = true;
@@ -128,9 +128,34 @@ Token Token::ParseToken(string data, unsigned long lineNumber)
 				r1 = TokenType::FLAGS;
 				r2 = data;
 			}
+			else if (&p == &staticAssemblyParsers[12])
+			{
+				r1 = TokenType::ARITHMETIC_OPERATOR;
+				r2 = data;
+			}
 
 			return Token(r1, r2);
 		}
+	}
+
+	if (!recursive)
+	{
+		// arithmetic expression check
+		char* duplicate = _strdup(data.c_str());
+		char* token = strtok(duplicate, ARITHMETIC_EXPRESSION_DELIMITER);
+
+		while (token != NULL)
+		{
+			Token t = Token::ParseToken(string(token), lineNumber, true);
+			if (t.GetTokenType() != TokenType::SYMBOL && t.GetTokenType() != TokenType::ARITHMETIC_OPERATOR)
+				throw AssemblerException("Parser cannot process unrecognized token '" + data + "'.", ErrorCodes::SYNTAX_UNKNOWN_TOKEN, lineNumber);
+
+			token = strtok(NULL, ARITHMETIC_EXPRESSION_DELIMITER);
+		}
+
+		delete duplicate;
+
+		return Token(TokenType::ARITHMETIC_EXPRESSION, data);
 	}
 
 	throw AssemblerException("Parser cannot process unrecognized token '" + data + "'.", ErrorCodes::SYNTAX_UNKNOWN_TOKEN, lineNumber);

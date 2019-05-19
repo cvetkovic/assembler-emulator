@@ -10,8 +10,6 @@ Assembler::Assembler(string input_file_url, string output_file_url)
 	this->output_file.open(output_file_url, ios::binary | ios::out | ios::trunc);
 	this->txt_output_file.open(output_file_url + ".txt", ios::out | ios::trunc);
 
-	// TODO: create output file if not exists
-
 	if (!input_file.is_open())
 		throw AssemblerException("Cannot open input file.", ErrorCodes::IO_INPUT_EXCEPTION);
 	else if (!output_file.is_open())
@@ -141,10 +139,49 @@ inline void Assembler::WriteToOutput(string text)
 	txt_output_file << text;
 }
 
+void Assembler::ResolveIncalculatableSymbols()
+{
+	bool end = false;
+
+	while (!end)
+	{
+		end = true;
+		
+		map<string, vector<Token>>::iterator it;
+		for (it = tns.begin(); it != tns.end(); it++)
+		{
+			try
+			{
+				symbolTable.InsertSymbol(it->first,
+					ASM_UNDEFINED,
+					ASM_UNDEFINED,
+					ArithmeticParser::CalculateSymbolValue(it->second, symbolTable),
+					ScopeType::LOCAL,
+					TokenType::LABEL);
+
+				// symbol is added, so table has changed
+				tns.erase(it->first);
+				end = false;
+				break; // break for because vector has change and iterator would throw exception
+			}
+			catch (const AssemblerException& ex)
+			{
+				throw ex;
+			}
+			catch (const exception& ex)
+			{
+				ex.what();
+				// error because symbol is missing
+			}
+		}
+	}
+}
+
 void Assembler::GenerateObjectFile()
 {
 	StripeOffCommentsAndLoadLocally();
 	FirstPass();
+	ResolveIncalculatableSymbols();
 	SecondPass();
 
 	// SYMBOL TABLE
@@ -190,8 +227,6 @@ void Assembler::FirstPass()
 		Token currentToken = Token::ParseToken(currentLineTokens.front(), lineNumber);
 		currentLineTokens.pop();
 		
-		// TODO: don't allow tokens to be put in START section
-
 		// necessary because label and instruction can be in the same line
 		string labelName;
 		if (currentToken.GetTokenType() == TokenType::LABEL)
@@ -297,38 +332,52 @@ void Assembler::FirstPass()
 			}
 			else if (currentToken.GetValue() == EQUIVALENCE_DIRECTIVE)
 			{
+				bool canProceed = true;	// if equ symbol can be calculated now
+
 				Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);
 				currentLineTokens.pop();
 
 				if (!sectionTable.HasFlag(currentSectionNo, SectionPermissions::DATA))
 					throw AssemblerException("Directive '" + currentToken.GetValue() + "' cannot be defined outside a section with data flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
 
-				// Token operand holds equivalence name
-				// Token equValue holds value to which label is equivalent
-
 				if (operand.GetTokenType() != TokenType::SYMBOL)
 					throw AssemblerException("Directive '.equ' requires label-like syntax for first operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
-				Token equValue = Token::ParseToken(currentLineTokens.front(), lineNumber);
-				currentLineTokens.pop();
+				//if (operand.GetTokenType() != TokenType::ARITHMETIC_EXPRESSION)
+				//	throw AssemblerException("Directive '.equ' requires constant or arithmetic expression for second operand.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
-				unsigned long value;
-
-				if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL)
-					value = strtoul(equValue.GetValue().c_str(), NULL, 0);
-				else if (equValue.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
-					value = stoul(equValue.GetValue(), nullptr, 0);
-				else
+				string expression;
+				while (currentLineTokens.size())
 				{
-					// TODO: implement equivalence expressions here if needed
+					expression += currentLineTokens.front();
+					currentLineTokens.pop();
+				}
+
+				vector<Token> arithmeticTokens = ArithmeticParser::Parse(ArithmeticParser::TokenizeExpression(expression));
+				
+				for (const Token& t : arithmeticTokens)
+				{
+					if (t.GetTokenType() == TokenType::SYMBOL)
+					{
+						SymbolTableEntry* entry = symbolTable.GetEntryByName(t.GetValue());
+
+						// only symbol in current section and file can be resolved
+						if (!entry || entry->sectionNumber != currentSectionNo)
+							canProceed = false;
+					}
 				}
 				
-				symbolTable.InsertSymbol(operand.GetValue(),
-					currentSectionNo,
-					value,
-					ASM_UNDEFINED,
-					ScopeType::LOCAL,
-					TokenType::DIRECTIVE);
+				if (canProceed)
+				{
+					symbolTable.InsertSymbol(labelName,
+						currentSectionNo,
+						ASM_UNDEFINED,
+						ArithmeticParser::CalculateSymbolValue(arithmeticTokens, symbolTable),
+						ScopeType::LOCAL,
+						TokenType::LABEL);
+				}
+				else
+					tns.insert({ operand.GetValue(), arithmeticTokens });
 			}
 
 			break;
@@ -459,7 +508,6 @@ void Assembler::SecondPass()
 	unsigned long lineNumber = 0;
 
 	unsigned long locationCounter = 0;
-	//SectionType currentSectionType = SectionType::ST_START;
 	SectionID currentSectionNo = START_SECTION;
 
 	for (vector<string> line : assemblyCode)
@@ -505,6 +553,8 @@ void Assembler::SecondPass()
 
 				if (currentToken.GetValue() == PUBLIC_MODIFIER)
 				{
+					// TODO: look in symbol table and update to global
+
 					if (symbolTable.GetEntryByName(labelName.GetValue()))
 						symbolTable.GetEntryByName(labelName.GetValue())->scopeType = ScopeType::GLOBAL;
 					else
@@ -698,5 +748,6 @@ void Assembler::WriteBinaryFile()
 	output_file << symbolTable.Serialize().str();
 	output_file << sectionTable.Serialize().str();
 	output_file << relocationTable.Serialize().str();
+	output_file << ArithmeticParser::Serialize(tns).str();
 	output_file << binaryBuffer.str();
 }

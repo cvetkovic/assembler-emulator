@@ -116,12 +116,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="arithmetic.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="enums.h" />
     <ClInclude Include="exceptions.h" />
     <ClInclude Include="structures.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="arithmetic.cpp" />
     <ClCompile Include="token.cpp" />
     <ClCompile Include="structures.cpp" />
   </ItemGroup>
