@@ -1,18 +1,32 @@
 .data
-.skip 10
+n:
+.byte 6
 
 .text
-
 .global _start
 
+# calculating factoriel
 _start:
-mov r0, 5
-call potprogram
-add r0, r1
+push n
+call fact
+pop r3
 halt
 
-potprogram:
+fact:
+mov r1, sp[2]
+cmp r1, 0
+jne else
+
+then:
+mov r0, 1
+ret
+
+else:
+mov r0, r1
+sub r0, 1
 push r0
-add r0, 0xffff
-pop r0
+call fact
+pop r1
+mov r1, sp[2]
+mul r0, r1
 ret

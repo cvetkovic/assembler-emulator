@@ -16,6 +16,7 @@
 # read-only and executable section
 .section interrupts, "rx"
 .global ivt_entry0, ivt_entry1
+.global ivt_entry2, ivt_entry3
 
 # cpu initialization
 ivt_entry0:

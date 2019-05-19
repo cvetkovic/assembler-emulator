@@ -36,6 +36,8 @@
     <None Include="examples\example15.asm" />
     <None Include="examples\example16.asm" />
     <None Include="examples\example17.asm" />
+    <None Include="examples\example18_1.asm" />
+    <None Include="examples\example18_2.asm" />
     <None Include="examples\infinite_loop.asm" />
     <None Include="examples\interrupts.asm" />
     <None Include="examples\example2.asm" />

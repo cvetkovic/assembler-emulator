@@ -134,6 +134,10 @@ void Linker::ResolveRelocations()
 			{
 				SymbolTableEntry& symbol = *executable->symbolTable.GetEntryByName(objectFile.GetSymbolTable().GetEntryByID(entry.symbolNo)->name);
 
+				if (symbol.sectionNumber != entry.sectionNo &&
+					symbol.scopeType == ScopeType::LOCAL)
+					throw LinkerException("Symbol '" + symbol.name + "' is not marked not marked as global or extern.", ErrorCodes::LINKER_INVALID_RELOCATION_SCOPE);
+
 				switch (entry.relocationType)
 				{
 				case RelocationType::R_386_16:
@@ -192,6 +196,18 @@ void Linker::ResolveStartSymbol()
 		throw LinkerException("Linker cannot entry point symbol '_start' in provided files.", ErrorCodes::LINKER_NO_START);
 }
 
+void Linker::DeleteLocalSymbols()
+{
+	vector<SymbolTableID> v;
+
+	for (size_t i = 0; i < executable->symbolTable.GetSize(); i++)
+		if (executable->symbolTable.GetEntryByID((SymbolTableID)i)->scopeType == ScopeType::LOCAL)
+			v.push_back((SymbolTableID)i);
+
+	for (size_t i = 0; i < v.size(); i++)
+		executable->symbolTable.DeleteSymbol(v.at((SymbolTableID)i));
+}
+
 Linker::~Linker()
 {
 	for (size_t i = 0; i < numberOfFiles; i++)
@@ -204,6 +220,7 @@ Executable* Linker::GetExecutable()
 	MergeAndLoadExecutable();
 	ResolveRelocations();
 	ResolveStartSymbol();
+	DeleteLocalSymbols();
 
 	return executable;
 }

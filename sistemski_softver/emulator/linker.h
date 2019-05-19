@@ -55,6 +55,7 @@ private:
 	void MergeAndLoadExecutable();
 	void ResolveRelocations();
 	void ResolveStartSymbol();
+	void DeleteLocalSymbols();
 
 public:
 	Linker(vector<string> inputFiles, LinkerSections sectionStart) : sectionStartMap(sectionStart) { Initialize(inputFiles, sectionStart); }

@@ -90,6 +90,8 @@ public:
 	stringstream GenerateTextualSymbolTable();
 	size_t GetSize() { return table.size(); }
 
+	void DeleteSymbol(const SymbolTableID& id) { table.erase(id); }
+
 	stringstream Serialize();
 	static SymbolTable Deserialize(size_t numberOfElements, ifstream& input);
 };
