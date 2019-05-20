@@ -2,7 +2,7 @@
 cd ab 
 
 <!-- section '.text' -->
-2c 20 00 07 00 9c a0 00 00 
+2c 20 00 ff ff 9c a0 00 00 
 
 <!-- section 'sekcija' -->
 0c 
@@ -11,10 +11,10 @@ cd ab
 Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
 .data          0              N/A            N/A            1              2              0              
 pocetak        0              N/A            0              1              1              1              
-diff           0              N/A            7              1              3              2              
+diff           0              N/A            N/A            1              3              2              
 .text          1              N/A            N/A            1              2              3              
 _start         1              N/A            0              0              1              4              
-kraj           1              N/A            0              1              1              5              
+kraj           1              N/A            5              1              1              5              
 sekcija        2              N/A            N/A            1              2              6              
 
 <!-- section table -->
@@ -30,3 +30,4 @@ SectionNo      SymbolNo       Offset         RelocationType
 
 <!-- TNS table -->
 Name           Scope          Section        Expression     
+diff           1              0              kraj-_start    

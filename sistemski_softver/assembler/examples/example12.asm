@@ -3,14 +3,14 @@
 pocetak:
 .word 0xabcd
 
-.equ diff, 2+5
+.equ diff, kraj-_start
 
 .text
 .global _start
 
 _start:
-kraj:
 add r0, &diff
+kraj:
 jmp _start
 
 

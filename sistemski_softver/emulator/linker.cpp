@@ -89,7 +89,7 @@ void Linker::MergeAndLoadExecutable()
 					else
 						symbol.offset += addressToWriteTo;
 
-					symbol.tokenType == TokenType::SYMBOL; // TNS directive to symbol
+					symbol.tokenType = TokenType::SYMBOL; // TNS directive to symbol
 
 					if (executable->symbolTable.GetEntryByName(symbol.name))
 						throw LinkerException("Multiple definition of symbol '" + symbol.name + "' in provided object files.", ErrorCodes::LINKER_MULTIPLE_SYMBOL_DEFINITION);
