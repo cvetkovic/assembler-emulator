@@ -55,7 +55,7 @@ enum ByteSelector
 	HIGHER = 1,
 };
 
-enum InterruptType : int
+enum InterruptType
 {
 	RESET = 0,
 	INT_INVALID_INSTRUCTION = 1,

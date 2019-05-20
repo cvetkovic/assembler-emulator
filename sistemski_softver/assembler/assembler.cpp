@@ -41,7 +41,10 @@ void Assembler::StripeOffCommentsAndLoadLocally()
 			line = line.substr(0, commentStart);
 
 		// convert all code to lowercase
-		transform(line.begin(), line.end(), line.begin(), tolower);
+		//transform(line.begin(), line.end(), line.begin(), tolower);
+		for (int i = 0; line[i]; i++) {
+			line[i] = tolower(line[i]);
+		}
 
 		// split current line into separate tokens
 		vector<string> currentLineTokens;
@@ -75,8 +78,7 @@ void Assembler::StripeOffCommentsAndLoadLocally()
 
 void Assembler::TokenizeCurrentLine(const string& line, vector<string>& collector)
 {
-	// TODO: _strdup -> strdup
-	char* duplicate = _strdup(line.c_str());
+	char* duplicate = strdup(line.c_str());
 	char* token = strtok(duplicate, TOKEN_DELIMITERS);
 
 	while (token != NULL)

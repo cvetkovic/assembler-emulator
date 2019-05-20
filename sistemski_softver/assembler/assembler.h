@@ -32,6 +32,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <string.h>
 using namespace std;
 
 #define BYTES_INLINE 16

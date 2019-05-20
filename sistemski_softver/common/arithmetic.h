@@ -3,6 +3,7 @@
 
 #include "token.h"
 
+#include <cmath>
 #include <iostream>
 #include <stack>
 #include <string>

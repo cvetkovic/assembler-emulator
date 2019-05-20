@@ -47,13 +47,13 @@ int main(int argc, char** argv)
 			Emulator emulator(executable);
 			emulator.Start();
 		}
-		catch (const LinkerException& ex)
+		catch (LinkerException& ex)
 		{
-			cout << ex << endl;
+			cout << ex.what() << endl;
 		}
-		catch (const EmulatorException& ex)
+		catch (EmulatorException& ex)
 		{
-			cout << ex << endl;
+			cout << ex.what() << endl;
 		}
 		catch (const exception& ex)
 		{

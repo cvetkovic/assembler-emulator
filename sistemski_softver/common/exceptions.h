@@ -1,6 +1,7 @@
 #ifndef ASSEMBLER_EXCEPTION_ASSEMBLER_H_
 #define ASSEMBLER_EXCEPTION_ASSEMBLER_H_
 
+#include <cstring>
 #include <iostream>
 #include <string>
 using namespace std;

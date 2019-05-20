@@ -141,7 +141,7 @@ Token Token::ParseToken(string data, unsigned long lineNumber, bool recursive)
 	if (!recursive)
 	{
 		// arithmetic expression check
-		char* duplicate = _strdup(data.c_str());
+		char* duplicate = strdup(data.c_str());
 		char* token = strtok(duplicate, ARITHMETIC_EXPRESSION_DELIMITER);
 
 		while (token != NULL)

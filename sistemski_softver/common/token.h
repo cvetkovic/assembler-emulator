@@ -4,6 +4,7 @@
 #define NUMBER_OF_PARSERS 13
 #define ARITHMETIC_EXPRESSION_DELIMITER "+-*/^()"
 
+#include <cstring>
 #include <regex>
 #include <string>
 #include "enums.h"

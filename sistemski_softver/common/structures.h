@@ -21,14 +21,14 @@ using namespace std;
 #define FLAG_READ_ONLY	0x02
 #define FLAG_EXECUTABLE	0x01
 
-enum ScopeType : int
+enum ScopeType
 {
 	GLOBAL = 0,
 	LOCAL,
 	EXTERN
 };
 
-enum SectionType : int
+enum SectionType
 {
 	ST_START = 0,
 	ST_TEXT,
@@ -38,8 +38,6 @@ enum SectionType : int
 };
 
 SectionType StringToSectionType(string t);
-
-enum TokenType : int;
 
 /////////////////////////////////////////////////////////
 ///////////////////// SYMBOL TABLE //////////////////////

@@ -25,7 +25,6 @@ int main(int argc, char** argv)
 			int numberOfFiles = (argc - 2) / 2;
 			for (int i = 0; i < numberOfFiles; i++)
 			{
-				// TODO: test this
 				Assembler assembler(argv[2 + numberOfFiles + i], argv[2 + i]);
 				assembler.GenerateObjectFile();
 			}
@@ -35,9 +34,9 @@ int main(int argc, char** argv)
 
 		return 0;
 	}
-	catch (const AssemblerException& ex)
+	catch (AssemblerException& ex)
 	{
-		cout << ex << endl;
+		cout << ex.what() << endl;
 	}
 	catch (const exception& ex)
 	{
