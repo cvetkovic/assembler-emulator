@@ -59,9 +59,9 @@ private:
 	char** a = new char*[1];
 
 public:
-	AssemblerException(string message) noexcept : exception(), message(message) {}
-	AssemblerException(string message, ErrorCodes errorCode) noexcept : exception(), message(message), errorCode(errorCode) {}
-	AssemblerException(string message, ErrorCodes errorCode, unsigned long location) noexcept : exception(), message(message), errorCode(errorCode), location(location) {}
+	AssemblerException(string message) : exception(), message(message) {}
+	AssemblerException(string message, ErrorCodes errorCode) : exception(), message(message), errorCode(errorCode) {}
+	AssemblerException(string message, ErrorCodes errorCode, unsigned long location) : exception(), message(message), errorCode(errorCode), location(location) {}
 	~AssemblerException()
 	{
 		// TODO: check if deletion is OK
@@ -69,7 +69,7 @@ public:
 		delete a;
 	}
 
-	const char* what() const noexcept override
+	const char* what()
 	{
 		string report = "Error";
 		if (errorCode != ErrorCodes::NOT_DEFINED)
@@ -88,11 +88,6 @@ public:
 		// cannot return report.c_str() because it is stored on stack
 		return cstr;
 	}
-
-	friend ostream& operator<<(ostream& out, const AssemblerException& ex)
-	{
-		return out << ex.what() << endl;
-	}
 };
 
 class LinkerException : public exception
@@ -104,8 +99,8 @@ private:
 	char** a = new char*[1];
 
 public:
-	LinkerException(string message) noexcept : exception(), message(message) {}
-	LinkerException(string message, ErrorCodes errorCode) noexcept : exception(), message(message), errorCode(errorCode) {}
+	LinkerException(string message) : exception(), message(message) {}
+	LinkerException(string message, ErrorCodes errorCode) : exception(), message(message), errorCode(errorCode) {}
 	~LinkerException()
 	{
 		// TODO: check if deletion is OK
@@ -113,7 +108,7 @@ public:
 		delete a;
 	}
 
-	const char* what() const noexcept override
+	const char* what()
 	{
 		string report = "Error";
 		if (errorCode != ErrorCodes::NOT_DEFINED)
@@ -129,11 +124,6 @@ public:
 
 		// cannot return report.c_str() because it is stored on stack
 		return cstr;
-	}
-
-	friend ostream& operator<<(ostream& out, const LinkerException& ex)
-	{
-		return out << ex.what() << endl;
 	}
 };
 
@@ -146,8 +136,8 @@ private:
 	char** a = new char*[1];
 
 public:
-	EmulatorException(string message) noexcept : exception(), message(message) {}
-	EmulatorException(string message, ErrorCodes errorCode) noexcept : exception(), message(message), errorCode(errorCode) {}
+	EmulatorException(string message) : exception(), message(message) {}
+	EmulatorException(string message, ErrorCodes errorCode) : exception(), message(message), errorCode(errorCode) {}
 	~EmulatorException()
 	{
 		// TODO: check if deletion is OK
@@ -155,7 +145,7 @@ public:
 		delete a;
 	}
 
-	const char* what() const noexcept override
+	const char* what()
 	{
 		string report = "Error";
 		if (errorCode != ErrorCodes::NOT_DEFINED)
@@ -171,11 +161,6 @@ public:
 
 		// cannot return report.c_str() because it is stored on stack
 		return cstr;
-	}
-
-	friend ostream& operator<<(ostream& out, const EmulatorException& ex)
-	{
-		return out << ex.what() << endl;
 	}
 };
 
