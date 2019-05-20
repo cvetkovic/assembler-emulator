@@ -512,3 +512,23 @@ RelocationTable RelocationTable::Deserialize(size_t numberOfElements, ifstream &
 
 	return result;
 }
+
+void TNSTable::InsertISymbol(string name, SectionID section, vector<Token> expression, ScopeType scope)
+{
+
+}
+
+void TNSTable::InsertISymbol(const TNSEntry& e)
+{
+
+}
+
+stringstream TNSTable::Serialize()
+{
+	return stringstream();
+}
+
+RelocationTable TNSTable::Deserialize(size_t numberOfElements, ifstream& input)
+{
+	return RelocationTable();
+}
