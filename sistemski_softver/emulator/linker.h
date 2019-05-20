@@ -1,6 +1,7 @@
 #ifndef _LINKER_EMULATOR_H
 #define _LINKER_EMULATOR_H
 
+#include "../common/arithmetic.h"
 #include "../common/structures.h"
 #include "executable.h"
 
@@ -25,6 +26,7 @@ private:
 	SymbolTable symbolTable;
 	SectionTable sectionTable;
 	RelocationTable relocationTable;
+	TNSTable tns;
 
 	// for raw data read from file
 	size_t contentSize;
@@ -37,6 +39,7 @@ public:
 	SymbolTable& GetSymbolTable() { return symbolTable; }
 	SectionTable& GetSectionTable() { return sectionTable; }
 	RelocationTable& GetRelocationTable() { return relocationTable; }
+	TNSTable& GetTNSTable() { return tns; }
 
 	const uint8_t& ContentRead(const unsigned long& address) const { return content[address]; }
 };
@@ -51,10 +54,13 @@ private:
 
 	const LinkerSections sectionStartMap;
 
+	size_t totalTNSCount = 0;
+
 	ObjectFile* GetObjectFile(const SymbolTableEntry& symbol);
 
 	void Initialize(vector<string>& inputFiles, LinkerSections& sections);
 	void MergeAndLoadExecutable();
+	void ResolveTNS();
 	void ResolveRelocations();
 	void ResolveStartSymbol();
 	void DeleteLocalSymbols();

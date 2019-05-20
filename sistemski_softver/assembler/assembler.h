@@ -62,7 +62,7 @@ private:
 	int currentBytesInline = 0;
 	size_t contentLength = 0;
 
-	map<string, vector<Token>> tns;
+	TNSTable tns;
 
 	void StripeOffCommentsAndLoadLocally();
 	void TokenizeCurrentLine(const string& line, vector<string>& collector);

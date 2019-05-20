@@ -513,22 +513,151 @@ RelocationTable RelocationTable::Deserialize(size_t numberOfElements, ifstream &
 	return result;
 }
 
-void TNSTable::InsertISymbol(string name, SectionID section, vector<Token> expression, ScopeType scope)
+void TNSTable::InsertISymbol(string name, SectionID section, string expression, ScopeType scope)
 {
+	vector<TNSEntry>::iterator it;
 
+	TNSEntry entry(name, section, expression, scope);
+
+	for (it = table.begin(); it != table.end(); it++)
+		if (it->name == name)
+			throw AssemblerException("TNS symbol '" + name + "' already exists duplicated.", ErrorCodes::SYMBOL_EXISTS);
+
+	table.push_back(entry);
 }
 
 void TNSTable::InsertISymbol(const TNSEntry& e)
 {
+	InsertISymbol(e.name, e.sectionNumber, e.expression, e.scope);
+}
 
+TNSEntry * TNSTable::GetEntryByID(unsigned id)
+{
+	return &table.at(id);
+}
+
+TNSEntry* TNSTable::GetEntryByName(string name)
+{
+	for (size_t i = 0; i < table.size(); i++)
+		if (table.at(i).name == name)
+			return &table.at(i);
+
+	return nullptr;
+}
+
+void TNSTable::DeleteEntryByName(string name)
+{
+	for (size_t i = 0; i < table.size(); i++)
+		if (table.at(i).name == name)
+			table.erase(table.begin() + i);
+}
+
+stringstream TNSTable::GenerateTextualTNSTable()
+{
+	stringstream output;
+
+	output << left;
+	output << setw(15) << "Name";
+	output << setw(15) << "Scope";
+	output << setw(15) << "Section";
+	output << setw(15) << "Expression";
+	output << endl;
+	
+	for (size_t i = 0; i < table.size(); i++)
+	{
+		TNSEntry& entry = table.at(i);
+
+		output << left;
+		output << setw(15) << entry.name;
+		output << setw(15) << entry.scope;
+		output << setw(15) << entry.sectionNumber;
+		output << setw(15) << entry.expression;
+		output << endl;
+	}
+
+	return output;
 }
 
 stringstream TNSTable::Serialize()
 {
-	return stringstream();
+	stringstream output;
+
+	char delimiter = ',';
+
+	for (size_t i = 0; i < table.size(); i++)
+	{
+		TNSEntry& entry = table.at(i);
+
+		size_t t = entry.name.size();
+		output.write(reinterpret_cast<char*>(&t), sizeof(size_t));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		const char* c = entry.name.c_str();
+		output.write(c, entry.name.size());
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		int a = entry.scope;
+		output.write(reinterpret_cast<char*>(&a), sizeof(a));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		output.write(reinterpret_cast<char*>(&entry.sectionNumber), sizeof(entry.sectionNumber));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		t = entry.expression.size();
+		output.write(reinterpret_cast<char*>(&t), sizeof(size_t));
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+
+		c = entry.expression.c_str();
+		output.write(c, entry.expression.size());
+		output.write(reinterpret_cast<char*>(&delimiter), sizeof(char));
+	}
+
+	return output;
 }
 
-RelocationTable TNSTable::Deserialize(size_t numberOfElements, ifstream& input)
+TNSTable TNSTable::Deserialize(size_t numberOfElements, ifstream& input)
 {
-	return RelocationTable();
+	TNSTable result;
+
+	size_t length = 0;
+	char c;
+
+	for (size_t i = 0; i < numberOfElements; i++)
+	{
+		TNSEntry entry;
+
+		input.read(reinterpret_cast<char*>(&length), sizeof(size_t));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		if (length)
+		{
+			vector<char> tmp(length);
+			input.read(tmp.data(), length);
+			entry.name.assign(tmp.data(), length);
+		}
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		int st;
+		input.read(reinterpret_cast<char*>(&st), sizeof(st));
+		entry.scope = static_cast<ScopeType>(st);
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&entry.sectionNumber), sizeof(entry.sectionNumber));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		input.read(reinterpret_cast<char*>(&length), sizeof(size_t));
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		if (length)
+		{
+			vector<char> tmp(length);
+			input.read(tmp.data(), length);
+			entry.expression.assign(tmp.data(), length);
+		}
+		input.read(reinterpret_cast<char*>(&c), sizeof(c));
+
+		result.InsertISymbol(entry);
+	}
+
+	return result;
 }

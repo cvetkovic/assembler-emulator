@@ -192,26 +192,33 @@ struct InstructionDetails
 
 struct TNSEntry
 {
-	vector<Token> expression;
-	ScopeType scope;
-	SectionID sectionNumber;
 	string name;
+	SectionID sectionNumber;
+	string expression;
+	ScopeType scope;
+
+	TNSEntry() {}
+	TNSEntry(string name, SectionID sectionNumber, string expression, ScopeType scopeType) :
+		name(name), sectionNumber(sectionNumber), expression(expression), scope(scopeType) {}
 };
 
 class TNSTable
 {
 private:
-	map<string, TNSEntry> table;
+	vector<TNSEntry> table;
 
 public:
-	void InsertISymbol(string name, SectionID section, vector<Token> expression, ScopeType scope);
+	void InsertISymbol(string name, SectionID section, string expression, ScopeType scope);
 	void InsertISymbol(const TNSEntry& e);
 
-	RelocationTableEntry* GetEntryByName(string name) { return &table.at(name); }
+	TNSEntry* GetEntryByID(unsigned id);
+	TNSEntry* GetEntryByName(string name);
+	void DeleteEntryByName(string name);
+	stringstream GenerateTextualTNSTable();
 	size_t GetSize() { return table.size(); }
 
 	stringstream Serialize();
-	static RelocationTable Deserialize(size_t numberOfElements, ifstream& input);
+	static TNSTable Deserialize(size_t numberOfElements, ifstream& input);
 };
 
 #endif

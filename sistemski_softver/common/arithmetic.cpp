@@ -102,7 +102,10 @@ vector<Token> ArithmeticParser::Parse(vector<Token> input)
 Token ArithmeticParser::ReturnToken(string data)
 {
 	Token t = Token::ParseToken(data, 0);
-	if (t.GetTokenType() == TokenType::ARITHMETIC_OPERATOR || t.GetTokenType() == TokenType::SYMBOL)
+	if (t.GetTokenType() == TokenType::ARITHMETIC_OPERATOR || 
+		t.GetTokenType() == TokenType::SYMBOL ||
+		t.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL ||
+		t.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 		return t;
 	
 	throw AssemblerException("");
@@ -132,14 +135,16 @@ vector<Token> ArithmeticParser::TokenizeExpression(string expression)
 	return result;
 }
 
-unsigned long ArithmeticParser::CalculateSymbolValue(vector<Token> tokens, SymbolTable& symbolTable, bool linker)
+unsigned long ArithmeticParser::CalculateSymbolValue(vector<Token> tokens, SymbolTable& symbolTable, bool linker, unsigned long section)
 {
 	stack<Token> tmp;
 	unsigned long rez = 0;
 
 	for (Token& t : tokens)
 	{
-		if (t.GetTokenType() == TokenType::SYMBOL)
+		if (t.GetTokenType() == TokenType::SYMBOL || 
+			t.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_DECIMAL ||
+			t.GetTokenType() == TokenType::OPERAND_IMMEDIATELY_HEX)
 			tmp.push(t);
 		else if (t.GetTokenType() == TokenType::ARITHMETIC_OPERATOR)
 		{
@@ -151,11 +156,24 @@ unsigned long ArithmeticParser::CalculateSymbolValue(vector<Token> tokens, Symbo
 			const SymbolTableEntry* s2 = symbolTable.GetEntryByName(op2.GetValue());
 			const SymbolTableEntry* s1 = symbolTable.GetEntryByName(op1.GetValue());
 
-			if (!s1 || !s2 || (!linker && s1->sectionNumber != s2->sectionNumber))
+			if ((s1 == 0 && op1.GetTokenType() == TokenType::SYMBOL) ||
+				(s2 == 0 && op2.GetTokenType() == TokenType::SYMBOL) ||
+				(linker == false && s1 != 0 && s2 != 0 && s1->sectionNumber != s2->sectionNumber) ||
+				(linker == false && s1 != 0 && section != -1 && s1->sectionNumber != section) ||
+				(linker == false && s2 != 0 && section != -1 && s2->sectionNumber != section))
 				throw exception();
 
-			unsigned long v2 = s2->offset;
-			unsigned long v1 = s1->offset;
+			unsigned long v2;
+			if (s2)
+				v2 = s2->offset;
+			else
+				v2 = strtoul(op2.GetValue().c_str(), NULL, 0);
+
+			unsigned long v1;
+			if (s1)
+				v1 = s1->offset;
+			else
+				v1 = strtoul(op1.GetValue().c_str(), NULL, 0);
 
 			if (t.GetValue() == "+")
 				rez = v1 + v2;
@@ -165,7 +183,7 @@ unsigned long ArithmeticParser::CalculateSymbolValue(vector<Token> tokens, Symbo
 				rez = v1 * v2;
 			else if (t.GetValue() == "/")
 				rez = v1 / v2;
-			else if (t.GetValue() == "/")
+			else if (t.GetValue() == "^")
 				rez = (unsigned long)pow(v1, v2);
 
 			char buffer[256];

@@ -146,21 +146,19 @@ void Assembler::ResolveIncalculatableSymbols()
 	while (!end)
 	{
 		end = true;
-		
-		map<string, vector<Token>>::iterator it;
-		for (it = tns.begin(); it != tns.end(); it++)
+
+		for (size_t i = 0; i < tns.GetSize(); i++)
 		{
 			try
 			{
-				symbolTable.InsertSymbol(it->first,
-					ASM_UNDEFINED,
-					ASM_UNDEFINED,
-					ArithmeticParser::CalculateSymbolValue(it->second, symbolTable),
-					ScopeType::LOCAL,
-					TokenType::LABEL);
+				TNSEntry& entry = *tns.GetEntryByID((unsigned)i);
+				vector<Token> arithmeticTokens = ArithmeticParser::Parse(ArithmeticParser::TokenizeExpression(entry.expression));
+				
+				unsigned long v = ArithmeticParser::CalculateSymbolValue(arithmeticTokens, symbolTable, false, entry.sectionNumber);
+				symbolTable.GetEntryByName(entry.name)->offset = v;
 
 				// symbol is added, so table has changed
-				tns.erase(it->first);
+				tns.DeleteEntryByName(entry.name);
 				end = false;
 				break; // break for because vector has change and iterator would throw exception
 			}
@@ -195,10 +193,10 @@ void Assembler::GenerateObjectFile()
 	// RELOCATION TABLE
 	WriteToOutput("\n<!-- relocation table -->\n");
 	WriteToOutput(relocationTable.GenerateTextualRelocationTable().str());
-	/* NOTE: if TNS should be added this is the place to do it.
-			 linked list of dependent symbols; removing of tail nodes until null returned
-			 circular depencdency detection -> if nothing is removed throw exception
-	*/
+
+	// TNS TABLE
+	WriteToOutput("\n<!-- TNS table -->\n");
+	WriteToOutput(tns.GenerateTextualTNSTable().str());
 
 	WriteBinaryFile();
 }
@@ -369,15 +367,24 @@ void Assembler::FirstPass()
 				
 				if (canProceed)
 				{
-					symbolTable.InsertSymbol(labelName,
+					symbolTable.InsertSymbol(operand.GetValue(),
 						currentSectionNo,
 						ASM_UNDEFINED,
 						ArithmeticParser::CalculateSymbolValue(arithmeticTokens, symbolTable),
 						ScopeType::LOCAL,
-						TokenType::LABEL);
+						TokenType::DIRECTIVE);
 				}
 				else
-					tns.insert({ operand.GetValue(), arithmeticTokens });
+				{
+					symbolTable.InsertSymbol(operand.GetValue(),
+						currentSectionNo,
+						ASM_UNDEFINED,
+						ASM_UNDEFINED,
+						ScopeType::LOCAL,
+						TokenType::DIRECTIVE);
+
+					tns.InsertISymbol(operand.GetValue(), currentSectionNo, expression, ScopeType::LOCAL);
+				}
 			}
 
 			break;
@@ -553,10 +560,10 @@ void Assembler::SecondPass()
 
 				if (currentToken.GetValue() == PUBLIC_MODIFIER)
 				{
-					// TODO: look in symbol table and update to global
-
 					if (symbolTable.GetEntryByName(labelName.GetValue()))
 						symbolTable.GetEntryByName(labelName.GetValue())->scopeType = ScopeType::GLOBAL;
+					else if (tns.GetEntryByName(labelName.GetValue()))
+						tns.GetEntryByName(labelName.GetValue())->scope = ScopeType::GLOBAL;
 					else
 						throw AssemblerException("Symbol '" + labelName.GetValue() + "' not found to be declared as global.", ErrorCodes::SYMBOL_NOT_FOUND, lineNumber);
 				}
@@ -733,13 +740,14 @@ void Assembler::SecondPass()
 
 void Assembler::WriteBinaryFile()
 {
-	size_t sizes[3];
+	size_t sizes[4];
 	
 	sizes[0] = symbolTable.GetSize();
 	sizes[1] = sectionTable.GetSize();
 	sizes[2] = relocationTable.GetSize();
+	sizes[3] = tns.GetSize();
 
-	output_file.write(reinterpret_cast<char*>(sizes), 3 * sizeof(size_t));
+	output_file.write(reinterpret_cast<char*>(sizes), 4 * sizeof(size_t));
 	output_file.write(reinterpret_cast<char*>(&contentLength), sizeof(size_t));
 
 	// doesn't work because string is not POD type
@@ -748,6 +756,6 @@ void Assembler::WriteBinaryFile()
 	output_file << symbolTable.Serialize().str();
 	output_file << sectionTable.Serialize().str();
 	output_file << relocationTable.Serialize().str();
-	output_file << ArithmeticParser::Serialize(tns).str();
+	output_file << tns.Serialize().str();
 	output_file << binaryBuffer.str();
 }
