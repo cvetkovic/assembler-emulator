@@ -645,13 +645,18 @@ void Assembler::SecondPass()
 				if (howMany < 0)
 					throw AssemblerException("Directive '.skip' expects value greated than zero.", ErrorCodes::INVALID_OPERAND, lineNumber);
 
-				for (long i = 0; i < howMany; i++)
-					WriteToOutput(0);
+				// bss section should not contain data, just annotation in symbol table that it exists
+				if (!sectionTable.HasFlag(currentSectionNo, SectionPermissions::BSS))
+					for (long i = 0; i < howMany; i++)
+						WriteToOutput(0);
 
 				locationCounter += howMany;
 			}
 			else if (currentToken.GetValue() == WORD_DIRECTIVE)
 			{
+				if (sectionTable.HasFlag(currentSectionNo, SectionPermissions::BSS))
+					throw AssemblerException("Directive '.word' cannot be put into secction with 'b' flag.", ErrorCodes::DIRECTIVE_NOT_ALLOWED_IN_SECTION, lineNumber);
+
 				do
 				{
 					Token operand = Token::ParseToken(currentLineTokens.front(), lineNumber);

@@ -124,7 +124,11 @@ void Linker::MergeAndLoadExecutable()
 			// copying from objectFile.content to executable.memory
 			unsigned long k;	// added
 			for (k = 0; k < entry.length; k++)
-				executable->MemoryWrite(addressToWriteTo++, objectFile.ContentRead(readFrom++));
+				if (!objectFile.GetSectionTable().HasFlag((SectionID)j, SectionPermissions::BSS))
+					executable->MemoryWrite(addressToWriteTo++, objectFile.ContentRead(readFrom++));
+				else
+					// do not read from object file because it doesn't contain data for .bss section
+					executable->MemoryWrite(addressToWriteTo++, 0);
 
 			// updating current section pointer for future merging
 			location.find(entry.name)->second = addressToWriteTo;

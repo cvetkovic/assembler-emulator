@@ -1,3 +1,6 @@
+.bss 
+.skip 12
+
 .data
 
 pocetak:
@@ -12,7 +15,3 @@ _start:
 add r0, &diff
 kraj:
 jmp _start
-
-
-.section sekcija
-halt
