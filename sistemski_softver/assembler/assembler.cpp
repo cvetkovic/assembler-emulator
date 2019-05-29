@@ -361,6 +361,10 @@ void Assembler::FirstPass()
 					{
 						SymbolTableEntry* entry = symbolTable.GetEntryByName(t.GetValue());
 
+						// because of circular dependency
+						if (entry && entry->tokenType == TokenType::DIRECTIVE)
+							canProceed = false;
+
 						// only symbol in current section and file can be resolved
 						if (!entry || entry->sectionNumber != currentSectionNo)
 							canProceed = false;

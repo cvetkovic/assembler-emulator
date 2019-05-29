@@ -7,6 +7,8 @@ pocetak:
 .word 0xabcd
 
 .equ diff, kraj-_start
+.equ a,5
+.equ b,a-4
 
 .text
 .global _start

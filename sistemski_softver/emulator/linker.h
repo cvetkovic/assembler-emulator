@@ -66,6 +66,8 @@ private:
 	void DeleteLocalSymbols();
 	void CheckForNotProvidedFiles();
 
+	unsigned long TNSSumSize();
+
 public:
 	Linker(vector<string> inputFiles, LinkerSections sectionStart) : sectionStartMap(sectionStart) { Initialize(inputFiles, sectionStart); }
 	~Linker();
