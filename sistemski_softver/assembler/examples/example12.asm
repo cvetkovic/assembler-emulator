@@ -1,8 +1,19 @@
+.bss 
+.skip 12
+
 .data
-.global pga
+
+pocetak:
 .word 0xabcd
-pga:
-.word pga
-pga1:
-.word pga1
-.equ razlika, pga1-pga
+
+.equ diff, kraj-_start
+.equ a,5
+.equ b,a-4
+
+.text
+.global _start
+
+_start:
+add r0, &diff
+kraj:
+jmp _start

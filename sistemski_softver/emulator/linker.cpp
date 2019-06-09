@@ -89,7 +89,7 @@ void Linker::MergeAndLoadExecutable()
 					else
 						symbol.offset += addressToWriteTo;
 
-					symbol.tokenType = TokenType::SYMBOL; // TNS directive to symbol
+					//symbol.tokenType = TokenType::SYMBOL; // TNS directive to symbol
 
 					if (executable->symbolTable.GetEntryByName(symbol.name))
 						throw LinkerException("Multiple definition of symbol '" + symbol.name + "' in provided object files.", ErrorCodes::LINKER_MULTIPLE_SYMBOL_DEFINITION);
@@ -124,7 +124,11 @@ void Linker::MergeAndLoadExecutable()
 			// copying from objectFile.content to executable.memory
 			unsigned long k;	// added
 			for (k = 0; k < entry.length; k++)
-				executable->MemoryWrite(addressToWriteTo++, objectFile.ContentRead(readFrom++));
+				if (!objectFile.GetSectionTable().HasFlag((SectionID)j, SectionPermissions::BSS))
+					executable->MemoryWrite(addressToWriteTo++, objectFile.ContentRead(readFrom++));
+				else
+					// do not read from object file because it doesn't contain data for .bss section
+					executable->MemoryWrite(addressToWriteTo++, 0);
 
 			// updating current section pointer for future merging
 			location.find(entry.name)->second = addressToWriteTo;
@@ -247,6 +251,19 @@ void Linker::CheckForNotProvidedFiles()
 	}
 }
 
+unsigned long Linker::TNSSumSize()
+{
+	unsigned long size = 0;
+
+	for (size_t obj = 0; obj < numberOfFiles; obj++)
+	{
+		TNSTable& tns = objectFiles[obj]->GetTNSTable();
+		size += tns.GetSize();
+	}
+
+	return size;
+}
+
 Linker::~Linker()
 {
 	for (size_t i = 0; i < numberOfFiles; i++)
@@ -261,6 +278,7 @@ void Linker::ResolveTNS()
 	while (!end)
 	{
 		end = true;
+		int oldTNSSumSize = TNSSumSize();
 		for (size_t obj = 0; obj < numberOfFiles; obj++)
 		{
 			TNSTable& tns = objectFiles[obj]->GetTNSTable();
@@ -274,7 +292,8 @@ void Linker::ResolveTNS()
 					vector<Token> arithmeticTokens = ArithmeticParser::Parse(ArithmeticParser::TokenizeExpression(entry.expression));
 
 					symbolTable.GetEntryByName(entry.name)->offset = ArithmeticParser::CalculateSymbolValue(arithmeticTokens, symbolTable, true);
-					
+					symbolTable.GetEntryByName(entry.name)->tokenType = TokenType::SYMBOL;
+
 					// symbol is added, so table has changed
 					tns.DeleteEntryByName(entry.name);
 					totalTNSCount--;
@@ -292,6 +311,9 @@ void Linker::ResolveTNS()
 				}
 			}
 		}
+
+		if (TNSSumSize() == oldTNSSumSize && oldTNSSumSize != 0)			
+			throw LinkerException("Some of .equ directive symbols are incalculatable.", ErrorCodes::LINKER_TNS_INCALCULATABLE);
 	}
 
 	if (totalTNSCount != 0)

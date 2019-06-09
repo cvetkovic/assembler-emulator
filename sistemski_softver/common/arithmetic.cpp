@@ -153,11 +153,13 @@ unsigned long ArithmeticParser::CalculateSymbolValue(vector<Token> tokens, Symbo
 			Token op1 = tmp.top();
 			tmp.pop();
 
-			const SymbolTableEntry* s2 = symbolTable.GetEntryByName(op2.GetValue());
-			const SymbolTableEntry* s1 = symbolTable.GetEntryByName(op1.GetValue());
+			SymbolTableEntry* s2 = symbolTable.GetEntryByName(op2.GetValue());
+			SymbolTableEntry* s1 = symbolTable.GetEntryByName(op1.GetValue());
 
 			if ((s1 == 0 && op1.GetTokenType() == TokenType::SYMBOL) ||
 				(s2 == 0 && op2.GetTokenType() == TokenType::SYMBOL) ||
+				(s1 != 0 && s1->tokenType == TokenType::DIRECTIVE) ||
+				(s2 != 0 && s2->tokenType == TokenType::DIRECTIVE) ||
 				(linker == false && s1 != 0 && s2 != 0 && s1->sectionNumber != s2->sectionNumber) ||
 				(linker == false && s1 != 0 && section != -1 && s1->sectionNumber != section) ||
 				(linker == false && s2 != 0 && section != -1 && s2->sectionNumber != section))
@@ -188,6 +190,28 @@ unsigned long ArithmeticParser::CalculateSymbolValue(vector<Token> tokens, Symbo
 
 			char buffer[256];
 			sprintf(buffer, "%lu", rez);
+
+			tmp.push(Token(TokenType::OPERAND_IMMEDIATELY_DECIMAL, string(buffer)));
+		}
+	}
+
+	if (tokens.size() == 1)
+	{
+		Token op = tmp.top();
+		tmp.pop();
+
+		const SymbolTableEntry* s = symbolTable.GetEntryByName(op.GetValue());
+
+		if ((s == 0 && op.GetTokenType() == TokenType::SYMBOL) || 
+			(s != 0 && s->tokenType == TokenType::DIRECTIVE && linker == false))
+			throw exception();
+
+		if (s == 0)
+			tmp.push(Token(TokenType::OPERAND_IMMEDIATELY_DECIMAL, op.GetValue()));
+		else
+		{
+			char buffer[256];
+			sprintf(buffer, "%lu", s->offset);
 
 			tmp.push(Token(TokenType::OPERAND_IMMEDIATELY_DECIMAL, string(buffer)));
 		}
