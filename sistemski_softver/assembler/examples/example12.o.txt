@@ -1,33 +1,21 @@
 <!-- section '.data' -->
-cd ab 
-
-<!-- section '.text' -->
-2c 20 00 ff ff 9c a0 00 00 
-
-<!-- section 'sekcija' -->
-0c 
+cd ab 02 00 04 00 
 
 <!-- symbol table -->
 Name           SectionNumber  Value          Offset         ScopeType      TokenType      EntryNumber    
 .data          0              N/A            N/A            1              2              0              
-pocetak        0              N/A            0              1              1              1              
-diff           0              N/A            N/A            1              3              2              
-.text          1              N/A            N/A            1              2              3              
-_start         1              N/A            0              0              1              4              
-kraj           1              N/A            5              1              1              5              
-sekcija        2              N/A            N/A            1              2              6              
+pga            0              N/A            2              0              1              1              
+pga1           0              N/A            4              1              1              2              
+razlika        0              N/A            2              1              3              3              
 
 <!-- section table -->
 Name           Length         __bnwdrx       EntryNumber    SymbolTableEntryNumber
-.data          2              00001100       0              0              
-.text          9              00000011       1              3              
-sekcija        1              00001001       2              6              
+.data          6              00001100       0              0              
 
 <!-- relocation table -->
 SectionNo      SymbolNo       Offset         RelocationType 
-1              2              3              0              
-1              4              7              0              
+0              1              2              0              
+0              2              4              0              
 
 <!-- TNS table -->
 Name           Scope          Section        Expression     
-diff           1              0              kraj-_start    
