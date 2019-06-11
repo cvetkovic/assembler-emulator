@@ -659,6 +659,7 @@ inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 	{
 	case InstructionMnemonic::ADD:
 	{
+		// ADD * OLD_C
 		if ((src >= 0 && dst >= 0) || (src >= 0 && dst < 0 && r < 0) || (src < 0 && dst >= 0 && r < 0))
 			psw = psw | FLAG_C;
 		else
@@ -668,6 +669,7 @@ inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 	case InstructionMnemonic::SUB:
 	case InstructionMnemonic::CMP:
 	{
+		// (SUB OR CMP) * NOT(OLD_C)
 		if ((src >= 0 && dst < 0 && r < 0) || (src >= 0 && dst >= 0 && r >= 0) || (src < 0 && dst >= 0 && r >= 0))
 			psw = psw | FLAG_C;
 		else
@@ -675,8 +677,10 @@ inline void CPU::SetFlagC(int16_t src, int16_t dst, int16_t r, InstructionMnemon
 		break;
 	}
 	case InstructionMnemonic::SHL:
+	// SHL * HIGHEST_BIT(INPUT)
 	case InstructionMnemonic::SHR:
 	{
+		// SHR * LOWEST_BIT(INPUT)
 		int16_t r = dst;
 		for (int i = 1; i <= src; i++)
 		{
