@@ -35,9 +35,12 @@
     <None Include="examples\example14.asm" />
     <None Include="examples\example15.asm" />
     <None Include="examples\example16.asm" />
+    <None Include="examples\example16_2.asm" />
     <None Include="examples\example17.asm" />
     <None Include="examples\example18_1.asm" />
     <None Include="examples\example18_2.asm" />
+    <None Include="examples\example19.asm" />
+    <None Include="examples\example20.asm" />
     <None Include="examples\infinite_loop.asm" />
     <None Include="examples\interrupts.asm" />
     <None Include="examples\example2.asm" />
@@ -49,6 +52,7 @@
     <None Include="examples\example7.asm" />
     <None Include="examples\example8.asm" />
     <None Include="examples\example9.asm" />
+    <None Include="examples\stdlib.asm" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\legend.txt" />

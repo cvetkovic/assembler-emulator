@@ -1,15 +1,22 @@
 .data
 n:
-.byte 6
+.byte 7
 
 .text
 .global _start
+.extern print_int
 
 # calculating factoriel
 _start:
 push n
 call fact
 pop r3
+
+xor r3, r3
+
+#u r0 je vec parametar
+call print_int
+
 halt
 
 fact:

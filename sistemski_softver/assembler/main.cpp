@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 {
 	if (argc < 4)
 	{
-		cout << "Invalid program call parameters. Syntax is ./c_as -o output_file input_file" << endl;
+		cout << "Invalid program call parameters. Syntax is ./assembler -o output_file input_file" << endl;
 
 		return 1;
 	}

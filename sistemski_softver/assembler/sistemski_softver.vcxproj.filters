@@ -97,6 +97,18 @@
     <None Include="examples\example18_2.asm">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="examples\example16_2.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\stdlib.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example19.asm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="examples\example20.asm">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="examples\legend.txt">
